@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, current_app, flash, redirect, url_for
+from flask import Blueprint, render_template, current_app, flash, redirect, url_for, make_response
+from app.helpers.auth_helpers import current_user, redirect_logged_in_users
 import jwt
 import nh3
 import requests
@@ -15,6 +16,7 @@ login_bp = Blueprint(
 
 
 @login_bp.route('/', methods=['GET', 'POST'])
+@redirect_logged_in_users
 def login():
     """Renders the login page to the frontend"""
     form = LoginForm()
@@ -54,12 +56,24 @@ def login():
                     flash(flash_msg)
                 # Decode the JWT Token with Project Secret Key
                 user_data = jwt.decode(token, current_app.config.get('PROJECT_SECRET'), algorithms=["HS256"])
-                print(user_data)
 
-                # Redirect to home page
-                return redirect(url_for('chat_screen_bp.chat_home'))
+                token = user_data['token']
+                email = user_data['email']
+                f_name = user_data['first_name']
+                l_name = user_data['last_name']
 
+                current_user.login_user(f_name, l_name, email)
+
+                # Create a response object
+                response = make_response(redirect(url_for('chat_screen_bp.chat_home')))
+
+                # Save data to cookies
+                response.set_cookie('token', token)
+
+                # Send response / Redirect
+                return response
             except Exception as e:
+                flash(flash_msg)
                 print(e)
         elif response.status_code == 500:
             flash(flash_msg)
@@ -67,17 +81,24 @@ def login():
             try:
                 error_data = response.json()
                 error_data = error_data['data']
-                if error_data['reason'] == 'token not provided':
+                if error_data['reason'] in ['token not provided', 'app token missing', 'invalid app token',
+                                            'app inactive']:
                     flash(flash_msg)
-                elif error_data['reason'] == 'invalid app token':
-                    flash(flash_msg)
+                elif error_data['reason'] == 'user account inactive':
+                    form.email.errors.append('The user account has been suspended. Please contact the helpdesk.')
+                    form.password.errors.append('The user account has been suspended. Please contact the helpdesk.')
                 elif error_data['reason'] == 'email missing':
-                    form.email.errors.append('Email is missing.')
+                    form.email.errors.append('Email field cannot be left blank.')
+                elif error_data['reason'] == 'password missing':
+                    form.password.errors.append('Password field cannot be left blank')
+                elif error_data['reason'] in ['user account not created', 'incorrect password']:
+                    form.email.errors.append('Email and password do not match. Please verify and try again.')
+                    form.password.errors.append('Email and password do not match. Please verify and try again.')
 
             except Exception as e:
+                flash(flash_msg)
                 print(e)
 
     context = {'form': form}
     return render_template('login.html', **context)
-
 

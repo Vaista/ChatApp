@@ -5,6 +5,16 @@
 {% endblock %}
 {% block content %}
     <div class="container FormDiv my-5 mx-auto">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert alert-danger mx-auto alert-dismissible fade show" role="alert">
+                    {% for msg in messages %}
+                        <p><small>{{ msg }}</small></p>
+                    {% endfor %}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endif %}
+        {% endwith %}
         <form method="post" class="border border-1" id="login_form">
             <div class="formHeadingDiv text-center">
                 <h3>Login</h3>

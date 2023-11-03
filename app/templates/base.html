@@ -20,12 +20,21 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-            <li class="nav-item">
-              <a class="nav-link" aria-current="page" href="#">Home</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('login_bp.login') }}">Login</a>
-            </li>
+            {% if current_user.is_logged_in == True %}
+              <li class="nav-item">
+                <a class="nav-link" aria-current="page" href="{{ url_for('chat_screen_bp.chat_home') }}">Home</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('login_bp.login') }}">Logout</a>
+              </li>
+            {% else %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('login_bp.login') }}">Login</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('signup_bp.signup') }}">Signup</a>
+              </li>
+            {% endif %}
           </ul>
         </div>
       </div>

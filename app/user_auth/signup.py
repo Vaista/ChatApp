@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, current_app, flash, make_response, redirect, url_for
-from datetime import datetime
 import jwt
 import nh3
 import requests
 
 from .forms import SignupForm
+from app.helpers.auth_helpers import current_user, redirect_logged_in_users
 
 
 # Defining a blueprint
@@ -16,6 +16,7 @@ signup_bp = Blueprint(
 
 
 @signup_bp.route('/', methods=['GET', 'POST'])
+@redirect_logged_in_users
 def signup():
     """Renders the login page to the frontend"""
     form = SignupForm()
@@ -58,13 +59,15 @@ def signup():
                     flash(flash_msg)
                 # Decode the JWT Token with Project Secret Key
                 user_data = jwt.decode(token, current_app.config.get('PROJECT_SECRET'), algorithms=["HS256"])
-                print(user_data)
 
                 token = user_data['token']
                 email = user_data['email']
                 f_name = user_data['first_name']
                 l_name = user_data['last_name']
                 # Save the data in neo4j and mongodb
+
+                # Logs the user in
+                current_user.login_user(f_name, l_name, email)
 
                 # Create a response object
                 response = make_response(redirect(url_for('chat_screen_bp.chat_home')))
