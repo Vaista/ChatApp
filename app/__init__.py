@@ -1,6 +1,6 @@
 from flask import Flask, redirect, url_for
 
-from app.user_auth import login, signup
+from app.user_auth import login, signup, logout
 from app.chat_screen import chat_screen
 from app.helpers.auth_helpers import current_user, login_required, redirect_logged_in_users
 
@@ -24,6 +24,7 @@ def create_app():
     # User Authentication Blueprints
     app.register_blueprint(login.login_bp, url_prefix='/login')
     app.register_blueprint(signup.signup_bp, url_prefix='/signup')
+    app.register_blueprint(logout.logout_bp, url_prefix='/logout')
 
     @app.route('/')
     def home():
