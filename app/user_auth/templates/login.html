@@ -1,8 +1,5 @@
 {% extends 'base.html' %}
 {% block title %}Login{% endblock %}
-{% block css %}
-    <link rel="stylesheet" href="{{ url_for('login_bp.static', filename ='css/login.css') }}">
-{% endblock %}
 {% block content %}
     <div class="container FormDiv my-5 mx-auto">
         {% with messages = get_flashed_messages() %}
@@ -15,7 +12,7 @@
                 </div>
             {% endif %}
         {% endwith %}
-        <form method="post" class="border border-1" id="login_form">
+        <form method="post" class="border border-1" id="formBody">
             <div class="formHeadingDiv text-center">
                 <h3>Login</h3>
             </div>

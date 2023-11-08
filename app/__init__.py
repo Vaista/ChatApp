@@ -2,6 +2,7 @@ from flask import Flask, redirect, url_for
 
 from app.user_auth import login, signup, logout
 from app.chat_screen import chat_screen
+from app.add_friends import add_friends
 from app.helpers.auth_helpers import current_user, login_required, redirect_logged_in_users
 
 
@@ -20,6 +21,9 @@ def create_app():
 
     # Chat Screen Blueprints
     app.register_blueprint(chat_screen.chat_screen_bp, url_prefix='/chat')
+
+    # Add Users Blueprint
+    app.register_blueprint(add_friends.add_friend_bp, url_prefix='/users/add_friends')
 
     # User Authentication Blueprints
     app.register_blueprint(login.login_bp, url_prefix='/login')

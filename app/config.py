@@ -13,6 +13,7 @@ class Config(object):
     CHAT_APP_TOKEN = os.environ.get('CHAT_APP_TOKEN').strip()
     PROJECT_SECRET = os.environ.get('PROJECT_SECRET').strip()
     AUTH_ENDPOINT = os.environ.get('AUTH_ENDPOINT').strip()
+    FRIEND_CONNECTION_ENDPOINT = os.environ.get('FRIEND_CONNECTION_ENDPOINT').strip()
 
 
 class ProductionConfig(Config):
