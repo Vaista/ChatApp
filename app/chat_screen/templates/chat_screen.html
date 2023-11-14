@@ -205,8 +205,12 @@
     <div class="modal fade" id="newChatModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="newChatLabel">Start New Chat</h1>
+            <div class="modal-header py-0">
+                <ul class="nav nav-underline">
+                    <li class="nav-item">
+                        <a class="nav-link active cursor-default" aria-current="page">New Chat</a>
+                    </li>
+                </ul>
                 <button type="button" class="btn-close modalClose" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -214,10 +218,7 @@
                     <div class="row">
                         <a class="btn btn-info mx-auto text-white" data-bs-toggle="modal" data-bs-target="#searchUserModal">Add New Friends</a>
                     </div>
-                    <div class="py-4">
-                        <div class="row">
-                            <h6>Name</h6>
-                        </div>
+                    <div class="py-4" id="friendListContainer">
                     </div>
                 </div>
             </div>
@@ -229,8 +230,15 @@
     <div class="modal fade" id="searchUserModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="newFriendLabel">Add New Friend</h1>
+            <div class="modal-header py-0">
+                <ul class="nav nav-underline">
+                    <li class="nav-item">
+                        <a class="nav-link active cursor-default" aria-current="page">Search User</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary cursor-pointer" data-bs-toggle="modal" data-bs-target="#receivedRequestModal">Accept Request</a>
+                    </li>
+                </ul>
                 <button type="button" class="btn-close modalClose" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -262,7 +270,65 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal for Accepting Friend Requests -->
+    <div class="modal fade" id="receivedRequestModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header py-0">
+                <ul class="nav nav-underline">
+                    <li class="nav-item">
+                        <a class="nav-link text-secondary cursor-pointer" aria-current="page" data-bs-toggle="modal" data-bs-target="#searchUserModal">Search User</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active cursor-default">Accept Request</a>
+                    </li>
+                </ul>
+                <button type="button" class="btn-close modalClose" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container">
+                    {% if received_requests is defined and received_requests|length > 0 %}
+                        {% for requests in received_requests %}
+                            <div class="card mb-3">
+                                <div class="row g-0">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <h6 class="card-title mb-1">{{ requests.name }}</h6>
+                                                <small class="card-text">{{ requests.email }}</small>
+                                            </div>
+                                            <div class="col-6 align-self-center">
+                                                <button class="btn btn-sm btn-info mx-1 float-end text-white font12 req_acceptFriendRequest" data-email="{{ requests.email }}">✓ Accept</button>
+                                                <button class="btn btn-sm btn-danger mx-1 float-end text-white font12 req_rejectFriendRequest" data-email="{{ requests.email }}">x Reject</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="card mb-3">
+                                <div class="row g-0">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <h6 class="card-title text-center text-muted mb-1">There are no pending Friend Requests</h6>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+
+
 {% endblock %}
 {% block js %}
-    <script src="{{ url_for('chat_screen_bp.static', filename='js/chat_screen.js') }}"></script>
+    <script src="{{ url_for('chat_screen_bp.static', filename='js/search_user_add_friends.js') }}"></script>
+    <script src="{{ url_for('chat_screen_bp.static', filename='js/add_friends.js') }}"></script>
 {% endblock %}

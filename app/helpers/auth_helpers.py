@@ -15,7 +15,7 @@ class CurrentUser:
         """Change login status"""
         self.first_name = first_name.title()
         self.last_name = last_name.title()
-        self.email = email.title()
+        self.email = email.lower()
         self.is_logged_in = True
 
     def logout_user(self):
