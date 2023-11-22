@@ -1,10 +1,10 @@
-from flask import Blueprint, render_template, current_app, flash, redirect, url_for, make_response
+from flask import Blueprint, render_template, current_app, flash, redirect, url_for, make_response, session
 from app.helpers.auth_helpers import current_user, redirect_logged_in_users
 import jwt
 import nh3
 import requests
 
-from .forms import LoginForm
+from app.user_auth.forms import LoginForm
 
 
 # Defining a blueprint
@@ -63,6 +63,8 @@ def login():
                 l_name = user_data['last_name']
 
                 current_user.login_user(f_name, l_name, email)
+
+                session['email'] = email
 
                 # Create a response object
                 response = make_response(redirect(url_for('chat_screen_bp.chat_home')))

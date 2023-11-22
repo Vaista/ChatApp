@@ -1,3 +1,22 @@
+#chatScreenParentContainer {
+    min-height: 90vh;
+}
+
+#sideNavCard {
+    min-width: fit-content;
+}
+
+#chat-list li {
+    cursor: pointer;
+}
+
+#chat-messages {
+    height: 280px;
+    overflow-y: scroll;
+    background: white;
+    margin-bottom: 2px;
+}
+
 #newChatDiv p {
     font-size: 20px;
 }
@@ -13,4 +32,61 @@
 
 #load-more-button {
     cursor: pointer;
+}
+
+.active_chat {
+    background-color: #eee;
+}
+
+.msgReceiverClass p, .msgSenderClass p {
+    display: inline-block;
+    color: #3A3A3A;
+}
+
+.msgSenderClass p {
+    background: #92EB93;
+    padding: 3px 6px 3px 35px;
+}
+
+.msgReceiverClass p {
+    background: #cff4fc;
+    padding: 3px 35px 3px 6px;
+}
+
+.msgReceiverClass {
+    text-align: left;
+}
+
+.msgSenderClass {
+    text-align: right;
+}
+
+.timeDetailsDiv {
+    position: relative;
+    bottom: 8px;
+}
+
+.timeDetailsDiv sub {
+    font-size: 0.62em;
+}
+
+.unreadBelowTextDiv {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(33, 37, 41, 0.30);
+}
+
+.unreadBelowText {
+    text-align: center;
+    font-size: 9px;
+    font-style: italic;
+    color: rgba(33, 37, 41, 0.75);
+    margin-bottom: 0;
+    position: relative;
+    top: 8px;
+}
+
+.unreadBelowText span {
+    padding: 4px;
+    background: #fff;
 }

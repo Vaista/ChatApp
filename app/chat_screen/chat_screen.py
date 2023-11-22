@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, current_app
+from flask import Blueprint, render_template, current_app, request, jsonify
 import requests
 
 from app.helpers.auth_helpers import login_required, current_user
-from app.add_friends.helpers import get_received_requests
 from app.helpers.tokens import encrypt_token, decrypt_token
+from app.add_friends.helpers import get_received_requests
+from app.database.models import User, ChatGroup, Message
 
 
 # Defining a blueprint
@@ -40,3 +41,13 @@ def chat_home():
     context = {'received_requests': received_requests, 'friend_list': friend_list,
                'friend_list_emails': []}
     return render_template('chat_screen.html', **context)
+
+
+@chat_screen_bp.route('/one-on-chat/new_chat/', methods=['POST'])
+@login_required
+def start_new_one_on_one_chat():
+    """Start a new chat conversation"""
+    email = request.form.get('email_id')
+    user = User.fetch_user(email)
+    chat_group = ChatGroup.create_one_on_one_chat(current_user.email, email)
+    return jsonify({'status': 'success'}), 200

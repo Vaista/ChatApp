@@ -1,7 +1,9 @@
 from flask import Flask, redirect, url_for
+from app.database.database import initialize_db, close_db
 
 from app.user_auth import login, signup, logout
 from app.chat_screen import chat_screen
+from app.chat_screen.events import socketio
 from app.add_friends import add_friends, user_friends
 from app.helpers.auth_helpers import current_user, login_required, redirect_logged_in_users
 
@@ -11,6 +13,11 @@ def create_app():
     app = Flask(__name__)
 
     app.config.from_object('app.config.app_config')
+
+    app.debug = app.config['DEBUG']
+
+    # Initialize Database
+    initialize_db(app)
 
     # Register the context processor
     @app.context_processor
@@ -35,5 +42,13 @@ def create_app():
     def home():
         """Home route, redirected to Chat page"""
         return redirect(url_for('chat_screen_bp.chat_home'))
+
+    # Register teardown function
+    # @app.teardown_appcontext
+    # def teardown_db(exception=None):
+    #     close_db(exception)
+
+    # Initialize Socket-IO
+    socketio.init_app(app)
 
     return app

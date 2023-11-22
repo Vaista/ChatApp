@@ -4,11 +4,13 @@
     <link rel="stylesheet" href="{{ url_for('chat_screen_bp.static', filename ='css/chat_screen.css') }}">
 {% endblock %}
 {% block content %}
-    <section class="grey-bg">
-        <div class="container-fluid py-5">
+    <section class="grey-bg" id="chatScreenParentContainer">
+        <div class="container-fluid py-3">
+            <h5 class="mb-3 ms-1">Welcome {{ current_user.first_name|safe }} {{ current_user.last_name|safe }}</h5>
+            <input type="hidden" value="{{ current_user.email }}" id="currentUserEmail" />
             <div class="row">
                 <div class="col-4 mb-4">
-                    <div class="card" style="min-width: fit-content;">
+                    <div class="card" id="sideNavCard">
                         <!-- Div for creating new chat -->
                         <div class="p-2 rounded bg-primary" id="newChatDiv">
                             <a class="d-flex text-white text-decoration-none justify-content-between" id="newChatModalBtn" data-bs-toggle="modal" data-bs-target="#newChatModal">
@@ -23,178 +25,22 @@
                                 </div>
                             </a>
                         </div>
-                        <div class="card-body">
-                            <ul class="list-unstyled mb-0">
-                                <li class="p-2 border-bottom" style="background-color: #eee;">
-                                    <a href="#!" class="d-flex text-decoration-none justify-content-between">
-                                        <div class="d-flex flex-row">
-                                            <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-8.webp" alt="avatar"
-                                              class="rounded-circle d-flex align-self-center me-3 shadow-1-strong" width="60">
-                                            <div class="pt-1">
-                                                <p class="fw-bold mb-0">John Doe</p>
-                                                <p class="small text-muted">Hello, Are you there?</p>
-                                            </div>
-                                        </div>
-                                        <div class="pt-1">
-                                            <p class="small text-muted mb-1">Just now</p>
-                                            <span class="badge bg-danger float-end">1</span>
-                                        </div>
-                                    </a>
-                                </li>
-                      <li class="p-2 border-bottom">
-                        <a href="#!" class="d-flex text-decoration-none justify-content-between">
-                          <div class="d-flex flex-row">
-                            <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-1.webp" alt="avatar"
-                              class="rounded-circle d-flex align-self-center me-3 shadow-1-strong" width="60">
-                            <div class="pt-1">
-                              <p class="fw-bold mb-0">Danny Smith</p>
-                              <p class="small text-muted">Lorem ipsum dolor sit.</p>
-                            </div>
-                          </div>
-                          <div class="pt-1">
-                            <p class="small text-muted mb-1">5 mins ago</p>
-                          </div>
-                        </a>
-                      </li>
-                      <li class="p-2 border-bottom">
-                        <a href="#!" class="d-flex justify-content-between">
-                          <div class="d-flex flex-row">
-                            <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-2.webp" alt="avatar"
-                              class="rounded-circle d-flex align-self-center me-3 shadow-1-strong" width="60">
-                            <div class="pt-1">
-                              <p class="fw-bold mb-0">Alex Steward</p>
-                              <p class="small text-muted">Lorem ipsum dolor sit.</p>
-                            </div>
-                          </div>
-                          <div class="pt-1">
-                            <p class="small text-muted mb-1">Yesterday</p>
-                          </div>
-                        </a>
-                      </li>
-                      <li class="p-2 border-bottom">
-                        <a href="#!" class="d-flex justify-content-between">
-                          <div class="d-flex flex-row">
-                            <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-3.webp" alt="avatar"
-                              class="rounded-circle d-flex align-self-center me-3 shadow-1-strong" width="60">
-                            <div class="pt-1">
-                              <p class="fw-bold mb-0">Ashley Olsen</p>
-                              <p class="small text-muted">Lorem ipsum dolor sit.</p>
-                            </div>
-                          </div>
-                          <div class="pt-1">
-                            <p class="small text-muted mb-1">Yesterday</p>
-                          </div>
-                        </a>
-                      </li>
-                      <li class="p-2 border-bottom">
-                        <a href="#!" class="d-flex justify-content-between">
-                          <div class="d-flex flex-row">
-                            <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-4.webp" alt="avatar"
-                              class="rounded-circle d-flex align-self-center me-3 shadow-1-strong" width="60">
-                            <div class="pt-1">
-                              <p class="fw-bold mb-0">Kate Moss</p>
-                              <p class="small text-muted">Lorem ipsum dolor sit.</p>
-                            </div>
-                          </div>
-                          <div class="pt-1">
-                            <p class="small text-muted mb-1">Yesterday</p>
-                          </div>
-                        </a>
-                      </li>
-                      <li class="p-2 border-bottom">
-                        <a href="#!" class="d-flex justify-content-between">
-                          <div class="d-flex flex-row">
-                            <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-5.webp" alt="avatar"
-                              class="rounded-circle d-flex align-self-center me-3 shadow-1-strong" width="60">
-                            <div class="pt-1">
-                              <p class="fw-bold mb-0">Lara Croft</p>
-                              <p class="small text-muted">Lorem ipsum dolor sit.</p>
-                            </div>
-                          </div>
-                          <div class="pt-1">
-                            <p class="small text-muted mb-1">Yesterday</p>
-                          </div>
-                        </a>
-                      </li>
-                      <li class="p-2">
-                        <a href="#!" class="d-flex justify-content-between">
-                          <div class="d-flex flex-row">
-                            <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-6.webp" alt="avatar"
-                              class="rounded-circle d-flex align-self-center me-3 shadow-1-strong" width="60">
-                            <div class="pt-1">
-                              <p class="fw-bold mb-0">Brad Pitt</p>
-                              <p class="small text-muted">Lorem ipsum dolor sit.</p>
-                            </div>
-                          </div>
-                          <div class="pt-1">
-                            <p class="small text-muted mb-1">5 mins ago</p>
-                            <span class="text-muted float-end"><i class="fas fa-check" aria-hidden="true"></i></span>
-                          </div>
-                        </a>
-                      </li>
-                    </ul>
-
-                  </div>
-                </div>
+                        <div class="card-body" id="chat-list"></div>
+                    </div>
                 </div>
                 <div class="col-8">
-                    <ul class="list-unstyled">
-                    <li class="d-flex justify-content-between mb-4">
-                        <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-6.webp" alt="avatar"
-                          class="rounded-circle d-flex align-self-start me-3 shadow-1-strong" width="60">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between p-3">
-                                <p class="fw-bold mb-0">Brad Pitt</p>
-                                <p class="text-muted small mb-0"><i class="far fa-clock"></i> 12 mins ago</p>
-                            </div>
-                            <div class="card-body">
-                                <p class="mb-0">
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
-                                    labore et dolore magna aliqua.
-                                </p>
+                    <input id="activeChatId" hidden />
+                    <div class="ps-2 pe-4 py-1 rounded-2" id="chat-messages">
+                    </div>
+                    <div class="list-unstyled">
+                        <div class="bg-white mb-3">
+                            <div class="form-outline">
+                                <textarea class="form-control" id="message-input" rows="4" placeholder="Enter your Message..."></textarea>
                             </div>
                         </div>
-                    </li>
-                    <li class="d-flex justify-content-between mb-4">
-                    <div class="card w-100">
-                      <div class="card-header d-flex justify-content-between p-3">
-                        <p class="fw-bold mb-0">Lara Croft</p>
-                        <p class="text-muted small mb-0"><i class="far fa-clock"></i> 13 mins ago</p>
-                      </div>
-                      <div class="card-body">
-                        <p class="mb-0">
-                          Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque
-                          laudantium.
-                        </p>
-                      </div>
                     </div>
-                    <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-5.webp" alt="avatar"
-                      class="rounded-circle d-flex align-self-start ms-3 shadow-1-strong" width="60">
-                  </li>
-                  <li class="d-flex justify-content-between mb-4">
-                    <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-6.webp" alt="avatar"
-                      class="rounded-circle d-flex align-self-start me-3 shadow-1-strong" width="60">
-                    <div class="card">
-                      <div class="card-header d-flex justify-content-between p-3">
-                        <p class="fw-bold mb-0">Brad Pitt</p>
-                        <p class="text-muted small mb-0"><i class="far fa-clock"></i> 10 mins ago</p>
-                      </div>
-                      <div class="card-body">
-                        <p class="mb-0">
-                          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
-                          labore et dolore magna aliqua.
-                        </p>
-                      </div>
-                    </div>
-                  </li>
-                  <li class="bg-white mb-3">
-                    <div class="form-outline">
-                      <textarea class="form-control" id="textAreaExample2" rows="4" placeholder="Enter your Message..."></textarea>
-                    </div>
-                  </li>
-                </ul>
-                <button type="button" class="btn text-white btn-info rounded-pill float-end">Send Message</button>
-              </div>
+                    <button type="button" class="btn text-white btn-info rounded-pill float-end" id="sendMessageBtn">Send Message</button>
+                </div>
             </div>
         </div>
     </section>
@@ -203,132 +49,135 @@
 
     <!-- Modal for starting new Chat -->
     <div class="modal fade" id="newChatModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header py-0">
-                <ul class="nav nav-underline">
-                    <li class="nav-item">
-                        <a class="nav-link active cursor-default" aria-current="page">New Chat</a>
-                    </li>
-                </ul>
-                <button type="button" class="btn-close modalClose" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="container">
-                    <div class="row">
-                        <a class="btn btn-info mx-auto text-white" data-bs-toggle="modal" data-bs-target="#searchUserModal">Add New Friends</a>
-                    </div>
-                    <div class="py-4" id="friendListContainer">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-0">
+                    <ul class="nav nav-underline">
+                        <li class="nav-item">
+                            <a class="nav-link active cursor-default" aria-current="page">New Chat</a>
+                        </li>
+                    </ul>
+                    <button type="button" class="btn-close modalClose" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container">
+                        <div class="row">
+                            <a class="btn btn-info mx-auto text-white" data-bs-toggle="modal" data-bs-target="#searchUserModal">Add New Friends</a>
+                        </div>
+                        <div class="py-4" id="friendListContainer">
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-      </div>
     </div>
 
     <!-- Modal for Searching Users -->
     <div class="modal fade" id="searchUserModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header py-0">
-                <ul class="nav nav-underline">
-                    <li class="nav-item">
-                        <a class="nav-link active cursor-default" aria-current="page">Search User</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-secondary cursor-pointer" data-bs-toggle="modal" data-bs-target="#receivedRequestModal">Accept Request</a>
-                    </li>
-                </ul>
-                <button type="button" class="btn-close modalClose" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="container">
-                    <div class="row">
-                        <form id="searchUserForm">
-                            <input class="form-control" autocomplete="off" name="search_user" placeholder="Search by Name or Email">
-                            <input type="submit" hidden>
-                        </form>
-                    </div>
-                    <div id="searchResult" class="pt-4 pb-1">
-                    </div>
-                    <div id="loading-spinner" class="d-none justify-content-center">
-                        <div class="spinner-border text-info" role="status">
-                            <span class="visually-hidden">Loading...</span>
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-0">
+                    <ul class="nav nav-underline">
+                        <li class="nav-item">
+                            <a class="nav-link active cursor-default" aria-current="page">Search User</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-secondary cursor-pointer" data-bs-toggle="modal" data-bs-target="#receivedRequestModal">Accept Request</a>
+                        </li>
+                    </ul>
+                    <button type="button" class="btn-close modalClose" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container">
+                        <div class="row">
+                            <form id="searchUserForm">
+                                <input class="form-control" autocomplete="off" name="search_user" placeholder="Search by Name or Email">
+                                <input type="submit" hidden>
+                            </form>
                         </div>
-                    </div>
-                    <div id="empty_search">
-                        Please Enter Name or Email to search for new users.
-                    </div>
-                    <div id="end-of-results" class="d-none pt-1 text-center">
-                        <p>End of Search Results</p>
-                    </div>
-                    <div id="load-more-search-result" class="d-none text-end">
-                        <a class="text-muted text-decoration-none" id="load-more-button">Load More</a>
+                        <div id="searchResult" class="pt-4 pb-1">
+                        </div>
+                        <div id="loading-spinner" class="d-none justify-content-center">
+                            <div class="spinner-border text-info" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <div id="empty_search">
+                            Please Enter Name or Email to search for new users.
+                        </div>
+                        <div id="end-of-results" class="d-none pt-1 text-center">
+                            <p>End of Search Results</p>
+                        </div>
+                        <div id="load-more-search-result" class="d-none text-end">
+                            <a class="text-muted text-decoration-none" id="load-more-button">Load More</a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-      </div>
     </div>
 
     <!-- Modal for Accepting Friend Requests -->
     <div class="modal fade" id="receivedRequestModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header py-0">
-                <ul class="nav nav-underline">
-                    <li class="nav-item">
-                        <a class="nav-link text-secondary cursor-pointer" aria-current="page" data-bs-toggle="modal" data-bs-target="#searchUserModal">Search User</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active cursor-default">Accept Request</a>
-                    </li>
-                </ul>
-                <button type="button" class="btn-close modalClose" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="container">
-                    {% if received_requests is defined and received_requests|length > 0 %}
-                        {% for requests in received_requests %}
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-0">
+                    <ul class="nav nav-underline">
+                        <li class="nav-item">
+                            <a class="nav-link text-secondary cursor-pointer" aria-current="page" data-bs-toggle="modal" data-bs-target="#searchUserModal">Search User</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active cursor-default">Accept Request</a>
+                        </li>
+                    </ul>
+                    <button type="button" class="btn-close modalClose" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container">
+                        {% if received_requests is defined and received_requests|length > 0 %}
+                            {% for requests in received_requests %}
+                                <div class="card mb-3">
+                                    <div class="row g-0">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <h6 class="card-title mb-1">{{ requests.name }}</h6>
+                                                    <small class="card-text">{{ requests.email }}</small>
+                                                </div>
+                                                <div class="col-6 align-self-center">
+                                                    <button class="btn btn-sm btn-info mx-1 float-end text-white font12 req_acceptFriendRequest" data-email="{{ requests.email }}">✓ Accept</button>
+                                                    <button class="btn btn-sm btn-danger mx-1 float-end text-white font12 req_rejectFriendRequest" data-email="{{ requests.email }}">x Reject</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
                             <div class="card mb-3">
-                                <div class="row g-0">
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-6">
-                                                <h6 class="card-title mb-1">{{ requests.name }}</h6>
-                                                <small class="card-text">{{ requests.email }}</small>
-                                            </div>
-                                            <div class="col-6 align-self-center">
-                                                <button class="btn btn-sm btn-info mx-1 float-end text-white font12 req_acceptFriendRequest" data-email="{{ requests.email }}">✓ Accept</button>
-                                                <button class="btn btn-sm btn-danger mx-1 float-end text-white font12 req_rejectFriendRequest" data-email="{{ requests.email }}">x Reject</button>
+                                    <div class="row g-0">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-12">
+                                                    <h6 class="card-title text-center text-muted mb-1">There are no pending Friend Requests</h6>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="card mb-3">
-                                <div class="row g-0">
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-12">
-                                                <h6 class="card-title text-center text-muted mb-1">There are no pending Friend Requests</h6>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                    {% endif %}
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
-      </div>
     </div>
 
 
 {% endblock %}
 {% block js %}
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+    <script src="{{ url_for('chat_screen_bp.static', filename='js/chat_screen.js') }}"></script>
+    <script src="{{ url_for('chat_screen_bp.static', filename='js/events.js') }}"></script>
     <script src="{{ url_for('chat_screen_bp.static', filename='js/search_user_add_friends.js') }}"></script>
     <script src="{{ url_for('chat_screen_bp.static', filename='js/add_friends.js') }}"></script>
 {% endblock %}

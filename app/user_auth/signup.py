@@ -3,7 +3,8 @@ import jwt
 import nh3
 import requests
 
-from .forms import SignupForm
+from app.database.models import User
+from app.user_auth.forms import SignupForm
 from app.helpers.auth_helpers import current_user, redirect_logged_in_users
 from app.helpers.tokens import encrypt_token
 
@@ -67,7 +68,6 @@ def signup():
                 l_name = user_data['last_name']
 
                 # Save the data in neo4j
-                # Test something out, sending data to neo4j
                 endpoint = f"{current_app.config['FRIEND_CONNECTION_ENDPOINT']}/users/create/"
                 data = {
                     'email': email,
@@ -79,10 +79,10 @@ def signup():
                     "token": f"{encrypt_token(data)}"
                 }
 
-                # Send a POST request with jwt token containing user data
                 response = requests.post(endpoint, json=token_data)
 
                 # Save the data in mongodb
+                User.create_user(email=email, first_name=f_name, last_name=l_name)
 
                 # Logs the user in
                 current_user.login_user(f_name, l_name, email)
