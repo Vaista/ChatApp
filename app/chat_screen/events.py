@@ -39,19 +39,19 @@ def handle_join(data):
     join_room(request.sid)
     print(f'Client joined room: {chat_id}')
 
-    # Mark the messages as read
-    Message.mark_chat_read(str(chat_id), email)
-
-    # Save connected user to MongoDB using the ConnectedUser model
-    ConnectedUser.create_connected_user(request.sid, email, chat_id)
-
     # Emit the 'chatList' event to the specific socket ID
     socketio.emit('chatList', {'chatList': get_chat_list(email), 'chatId': str(chat_id), 'source': 'join'},
                   room=request.sid)
 
+    # Save connected user to MongoDB using the ConnectedUser model
+    ConnectedUser.create_connected_user(request.sid, email, chat_id)
+
     # Emit the 'chatMessages' event to the specific socket ID
     socketio.emit('chatMessages', {'messages': Message.fetch_messages(chat_id, email), 'chat_id': str(chat_id)},
                   room=request.sid)
+
+    # Mark the messages as read
+    Message.mark_chat_read(str(chat_id), email)
 
 
 @socketio.on('sendMessage')

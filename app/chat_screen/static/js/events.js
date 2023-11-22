@@ -63,6 +63,7 @@ $(document).ready (() => {
                     </div>`;
         });
         $('#chat-messages').html(html);
+        $("#chat-messages").scrollTop($("#chat-messages")[0].scrollHeight);
     }
 
     function sendMessage() {
@@ -84,12 +85,8 @@ $(document).ready (() => {
         }
     }
 
-    function updateActiveChat(chatId) {
-        $("#chat-list li").removeClass('active_chat');
-        $("#chat_"+chatId).addClass('active_chat');
-    }
-
     function updateSentReceivedMessage(data) {
+        console.log(data);
         let html = '';
         let isSenderClass = 'msgReceiverClass';
         if (currentUserEmail.trim() === data.sender.trim()) {
@@ -102,6 +99,17 @@ $(document).ready (() => {
                 </div>`;
 
         $('#chat-messages').append(html);
+
+        if (currentUserEmail.trim() === data.sender.trim()) {
+            // Scroll to bottom
+            $("#chat-messages").scrollTop($("#chat-messages")[0].scrollHeight);
+        }
+
+    }
+
+    function updateActiveChat(chatId) {
+        $("#chat-list li").removeClass('active_chat');
+        $("#chat_"+chatId).addClass('active_chat');
     }
 
 
@@ -123,6 +131,8 @@ $(document).ready (() => {
         if (received_chat_id.trim() === activeChatId.trim()) {
             socket.emit('mark-as-read', { message_id: data.message_id, email: currentUserEmail });
             updateSentReceivedMessage(data);
+        } else {
+            $("#notificationSound")[0].play();
         }
     });
 
