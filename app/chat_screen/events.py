@@ -34,6 +34,10 @@ def handle_join(data):
     """Join Chat Room"""
     chat_id = data.get('chatId')
     email = session['email']
+
+    # Update last active time of user
+    User.update_last_active(email)
+
     if chat_id is None:
         chat_id = ChatGroup.fetch_recent_chat_id(email)
 
@@ -67,6 +71,10 @@ def fetch_more_paginated_messages(data):
     """Fetch more paginated messages for a chat"""
     chat_id = data.get('chatId')
     email = session.get('email')
+
+    # Update last active time of user
+    User.update_last_active(email)
+
     oldest_msg_time = data.get('oldest_msg_time')
     if oldest_msg_time is not None:
         oldest_msg_time = datetime.strptime(oldest_msg_time, '%Y-%m-%d %H:%M:%S.%f')
@@ -82,8 +90,12 @@ def handle_send_message(data):
     chat_group_id = data.get('chat_id')
 
     message_content = data.get('message')
+    email = session['email']
 
-    sender = User.fetch_user(session['email'])
+    # Update last active time of user
+    User.update_last_active(email)
+
+    sender = User.fetch_user(email)
     chat_group = ChatGroup.fetch_group_by_id(chat_group_id)
 
     if sender and chat_group:
@@ -117,3 +129,14 @@ def handle_mark_msg_read(data):
     email = data.get('email')
     if message_id and email:
         Message.mark_message_read(message_id, email)
+
+
+@socketio.on('refresh-chat-list')
+@login_required
+def refresh_chat_list(data):
+    email = data.get('email')
+    chat_id = data.get('chat_id')
+
+    # Emit the 'chatList' event to the specific socket ID
+    socketio.emit('chatList', {'chatList': get_chat_list(email), 'chatId': str(chat_id), 'source': 'refresh_chat_list'},
+                  room=request.sid)

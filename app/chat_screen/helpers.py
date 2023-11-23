@@ -44,6 +44,24 @@ def fetch_chat_group_name(group, active_user):
     return group_name
 
 
+def fetch_user_last_active(group, active_user):
+    """Returns the name of chat to be rendered on the basis of the type of chat"""
+    if group.type == 'one-on-one':
+        participants = group.participants
+        is_active = None
+        for participant in participants:
+            if participant.email.strip() != active_user.email.strip():
+                time_active = participant.last_active.replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Asia/Kolkata'))
+                time_passed = (datetime.now(tz=pytz.timezone('Asia/Kolkata')) - time_active).seconds
+                if time_passed < 180:
+                    is_active = 'true'
+                else:
+                    is_active = 'false'
+    else:
+        is_active = 'group'
+    return is_active
+
+
 def get_chat_list(email):
     """Get the Chat List to be rendered to the screen in the requested format"""
     user = User.fetch_user(email)
@@ -57,6 +75,7 @@ def get_chat_list(email):
             'name': fetch_chat_group_name(chat, user),
             'message': last_message,
             'unread_count': unread_message_count,
-            'last_activity': calculate_time_ago(chat.last_activity)
+            'last_activity': calculate_time_ago(chat.last_activity),
+            'is_active': fetch_user_last_active(chat, user)
         })
     return chat_list

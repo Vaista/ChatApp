@@ -10,17 +10,30 @@ $(document).ready (() => {
 
         chatList.forEach(function (chat) {
             let unreadBadge = '';
+            let is_active = ''
+
              if ((chat.unread_count > 0) && (chat.id !== activeChatId)) {
                 unreadBadge = `<span class="badge bg-danger float-end">${chat.unread_count}</span>`;
+             }
+
+             if (chat.is_active === 'group') {
+                is_active = 'group-chat';
+             } else if (chat.is_active === 'true') {
+                is_active = 'logged-in';
+             } else if (chat.is_active === 'false') {
+                is_active = 'logged-out';
              }
 
             html += `<li class="p-2 border-bottom" id="chat_${chat.id}" data-chatId="${chat.id}">
                         <a class="d-flex text-decoration-none justify-content-between">
                             <div class="d-flex flex-row">
-                                <img src="https://w7.pngwing.com/pngs/340/946/png-transparent-avatar-user-computer-icons-software-developer-avatar-child-face-heroes-thumbnail.png" alt="avatar"
-                                  class="rounded-circle d-flex align-self-center me-3 shadow-1-strong" width="55">
+                                <div class="profile-pic-container">
+                                    <img src="https://w7.pngwing.com/pngs/340/946/png-transparent-avatar-user-computer-icons-software-developer-avatar-child-face-heroes-thumbnail.png" alt="avatar"
+                                      class="rounded-circle d-flex align-self-center me-3 shadow-1-strong" width="55">
+                                    <div class="indicator ${is_active}"></div>
+                                </div>
                                 <div class="pt-1">
-                                    <p class="fw-bold mb-0">${chat.name}</p>
+                                    <p class="fw-bold mb-0"> ${chat.name} </p>
                                     <p class="small text-muted">${chat.message}</p>
                                 </div>
                             </div>
@@ -187,7 +200,7 @@ $(document).ready (() => {
         updateChatList(data.chatList);
         if ((data.chatId !== null) && (data.source === 'join')) {
             chatId = data.chatId;
-        } else if (data.source === 'send_message') {
+        } else if ((data.source === 'send_message') || (data.source === 'refresh_chat_list')) {
             chatId = $("#activeChatId").val();
         }
         updateActiveChat(chatId);
@@ -241,5 +254,13 @@ $(document).ready (() => {
     $(window).on('beforeunload', function() {
         socket.disconnect();
     });
+
+    // Reload Chat List every 2 minutes, to refresh the active status of the chat
+    setInterval(function () {
+        let chat_id = $("#activeChatId").val();
+        socket.emit('refresh-chat-list', { email: currentUserEmail, chat_id: chat_id });
+    }, 120000);
+
+
 
 });

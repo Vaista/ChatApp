@@ -10,6 +10,39 @@
     cursor: pointer;
 }
 
+.profile-pic-container {
+    position: relative;
+    display: inline-block;
+}
+
+.indicator {
+    width: 16px;
+    height: 16px;
+    position: absolute;
+    bottom: 6px;
+    right: 15px;
+    border-radius: 50%;
+}
+
+.logged-in {
+    background-color: rgba(0, 128, 0);
+    border: 2px solid #eee;
+}
+
+.logged-out {
+    background-color: rgba(169, 169, 169);
+    border: 2px solid #eee;
+}
+
+.group-chat {
+    background-color: transparent;
+    border: none;
+}
+
+.logged-out {
+  color: gray;
+}
+
 #chat-messages {
     height: 280px;
     overflow-y: scroll;

@@ -19,6 +19,7 @@ class User(Document):
     first_name = StringField(required=True)
     last_name = StringField(required=True)
     created_on = DateTimeField(default=lambda: datetime.now(pytz.timezone('Asia/Kolkata')))
+    last_active = DateTimeField(default=lambda: datetime.now(pytz.timezone('Asia/Kolkata')))
 
     meta = {"db_alias": alias, "collection": "user"}
 
@@ -37,6 +38,15 @@ class User(Document):
         user = User.objects(email=email)
         if len(user) > 0:
             return user[0]
+
+    @staticmethod
+    @reconnect
+    def update_last_active(email):
+        """Update the last active time of user"""
+        user = User.fetch_user(email)
+        if user is not None:
+            user.last_active = datetime.now(pytz.timezone('Asia/Kolkata'))
+            user.save()
 
 
 class ChatGroup(Document):
