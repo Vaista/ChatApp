@@ -1,9 +1,14 @@
-from app.chat_screen.socket_extension import socketio
-from app.helpers.auth_helpers import login_required
+from datetime import datetime
 from flask import session, request
 from flask_socketio import join_room, leave_room
+
 from app.chat_screen.helpers import get_chat_list
+from app.chat_screen.socket_extension import socketio
 from app.database.models import ChatGroup, User, Message, ConnectedUser
+from app.helpers.auth_helpers import login_required
+
+
+MESSAGES_PER_PAGE = 20
 
 
 @socketio.on('connect')
@@ -46,12 +51,28 @@ def handle_join(data):
     # Save connected user to MongoDB using the ConnectedUser model
     ConnectedUser.create_connected_user(request.sid, email, chat_id)
 
+    messages = Message.fetch_messages(chat_id, email, max_timestamp=None, item_count=MESSAGES_PER_PAGE)
+
     # Emit the 'chatMessages' event to the specific socket ID
-    socketio.emit('chatMessages', {'messages': Message.fetch_messages(chat_id, email), 'chat_id': str(chat_id)},
+    socketio.emit('chatMessages', {'messages': messages, 'chat_id': str(chat_id)},
                   room=request.sid)
 
     # Mark the messages as read
     Message.mark_chat_read(str(chat_id), email)
+
+
+@socketio.on('fetch-more-messages')
+@login_required
+def fetch_more_paginated_messages(data):
+    """Fetch more paginated messages for a chat"""
+    chat_id = data.get('chatId')
+    email = session.get('email')
+    oldest_msg_time = data.get('oldest_msg_time')
+    if oldest_msg_time is not None:
+        oldest_msg_time = datetime.strptime(oldest_msg_time, '%Y-%m-%d %H:%M:%S.%f')
+        messages = Message.fetch_messages(chat_id, email, max_timestamp=oldest_msg_time, item_count=MESSAGES_PER_PAGE)
+        socketio.emit('more_messages', {'messages': messages, 'chat_id': str(chat_id)},
+                      room=request.sid)
 
 
 @socketio.on('sendMessage')
@@ -59,8 +80,6 @@ def handle_join(data):
 def handle_send_message(data):
     """Sending Message through SocketIO"""
     chat_group_id = data.get('chat_id')
-
-    room = request.sid
 
     message_content = data.get('message')
 

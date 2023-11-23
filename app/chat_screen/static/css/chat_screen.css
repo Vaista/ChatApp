@@ -17,6 +17,11 @@
     margin-bottom: 2px;
 }
 
+#noMsgAvailable {
+    position: relative;
+    left: 8px;
+}
+
 #newChatDiv p {
     font-size: 20px;
 }
@@ -70,13 +75,13 @@
     font-size: 0.62em;
 }
 
-.unreadBelowTextDiv {
+.chatHistoryNotificationDiv {
     margin-top: 20px;
-    margin-bottom: 20px;
+    margin-bottom: 26px;
     border-bottom: 1px solid rgba(33, 37, 41, 0.30);
 }
 
-.unreadBelowText {
+.chatHistoryNotification {
     text-align: center;
     font-size: 9px;
     font-style: italic;
@@ -86,7 +91,7 @@
     top: 8px;
 }
 
-.unreadBelowText span {
+.chatHistoryNotification span {
     padding: 4px;
     background: #fff;
 }

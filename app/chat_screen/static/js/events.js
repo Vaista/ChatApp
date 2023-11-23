@@ -1,6 +1,7 @@
 $(document).ready (() => {
 
     const currentUserEmail = $("#currentUserEmail").val();
+    var morePageAvailable = true;
 
     function updateChatList(chatList) {
 
@@ -37,33 +38,78 @@ $(document).ready (() => {
     function updateChatMessages(messages) {
 
         $('#chat-messages').empty();
-        let unreadMsgStart = false;
-        let unreadMsgReached = false;
 
-        let html = '';
-        messages.forEach(function (msg) {
+        if (messages.length === 0) {
+            // No messages present
+            let html = '<div class="chatHistoryNotificationDiv" id="noMsgAvailable"><p class="chatHistoryNotification"><span>No message history found. Start a New Conversation here.</span></p></div>';
+            $('#chat-messages').html(html);
+            morePageAvailable = false;
+        } else {
+            // Messages present
+            let unreadMsgStart = false;
+            let unreadMsgReached = false;
 
-            if (msg.read === false) {
-                unreadMsgStart = true;
+            let html = '';
+            messages.forEach(function (msg) {
+
+                if (msg.read === false) {
+                    unreadMsgStart = true;
+                }
+
+                if ((unreadMsgStart === true) && (unreadMsgReached === false)) {
+                    html += '<div class="chatHistoryNotificationDiv" id="newMessageNotification"><p class="chatHistoryNotification"><span>New unread messages below</span></p></div>';
+                    unreadMsgReached = true;
+                }
+
+                let isSenderClass = 'msgReceiverClass';
+                if (currentUserEmail.trim() === msg.sender.trim()) {
+                    isSenderClass = 'msgSenderClass';
+                }
+
+                html += `<div class="${isSenderClass} individualMsgDiv my-1">
+                            <p class="mb-0 rounded-2">${msg.content}</p><br/>
+                            <span class="text-muted timeDetailsDiv" data-timestamp="${msg.str_timestamp}"><sub>${msg.timestamp}</sub></span>
+                        </div>`;
+            });
+            $('#chat-messages').html(html);
+            if (unreadMsgReached === true) {
+                // Calculate the offset of the target div relative to the parent container
+                var offset = $("#newMessageNotification").offset().top - $("#chat-messages").offset().top;
+                // Bring the target div into view by setting the scrollTop property of the parent container
+                $("#chat-messages").scrollTop(offset - 100);
+            } else {
+                $("#chat-messages").scrollTop($("#chat-messages")[0].scrollHeight);
             }
+        }
+    }
 
-            if ((unreadMsgStart === true) && (unreadMsgReached === false)) {
-                html += '<div class="unreadBelowTextDiv"><p class="unreadBelowText"><span>New unread messages below</span></p></div>';
-                unreadMsgReached = true;
-            }
+    function appendChatMessage(data) {
 
-            let isSenderClass = 'msgReceiverClass';
-            if (currentUserEmail.trim() === msg.sender.trim()) {
-                isSenderClass = 'msgSenderClass';
-            }
+        let messages = data.messages;
+        if (messages.length > 0) {
 
-            html += `<div class="${isSenderClass} my-1">
-                        <p class="mb-0 rounded-2">${msg.content}</p><br/>
-                        <span class="text-muted timeDetailsDiv"><sub>${msg.timestamp}</sub></span>
-                    </div>`;
-        });
-        $('#chat-messages').html(html);
-        $("#chat-messages").scrollTop($("#chat-messages")[0].scrollHeight);
+            let html = '';
+            messages.forEach(function (msg) {
+
+                let isSenderClass = 'msgReceiverClass';
+                if (currentUserEmail.trim() === msg.sender.trim()) {
+                    isSenderClass = 'msgSenderClass';
+                }
+
+                html += `<div class="${isSenderClass} individualMsgDiv my-1">
+                            <p class="mb-0 rounded-2">${msg.content}</p><br/>
+                            <span class="text-muted timeDetailsDiv" data-timestamp="${msg.str_timestamp}"><sub>${msg.timestamp}</sub></span>
+                        </div>`;
+            });
+
+            $('#chat-messages').prepend(html);
+
+        } else {
+            morePageAvailable = false;
+            html = '<div class="chatHistoryNotificationDiv"><p class="chatHistoryNotification"><span>Reached end of chat history.</span></p></div>';
+            $('#chat-messages').prepend(html);
+        }
+
     }
 
     function sendMessage() {
@@ -86,16 +132,15 @@ $(document).ready (() => {
     }
 
     function updateSentReceivedMessage(data) {
-        console.log(data);
         let html = '';
         let isSenderClass = 'msgReceiverClass';
         if (currentUserEmail.trim() === data.sender.trim()) {
             isSenderClass = 'msgSenderClass';
         }
 
-        html += `<div class="${isSenderClass} my-1">
+        html += `<div class="${isSenderClass} individualMsgDiv my-1">
                     <p class="mb-0 rounded-2">${data.message}</p><br/>
-                    <span class="text-muted timeDetailsDiv"><sub>${data.timestamp}</sub></span>
+                    <span class="text-muted timeDetailsDiv" data-timestamp="${data.str_timestamp}"><sub>${data.timestamp}</sub></span>
                 </div>`;
 
         $('#chat-messages').append(html);
@@ -119,6 +164,7 @@ $(document).ready (() => {
 
     // Handle New Connection - Login or Reload
     socket.on('connect', function() {
+        morePageAvailable = true;
         socket.emit('join', {});
     });
 
@@ -152,11 +198,21 @@ $(document).ready (() => {
         updateChatMessages(data.messages);
     });
 
+    socket.on('more_messages', function (data) {
+        var topMessageDiv = $("#chat-messages .individualMsgDiv:first");
+        appendChatMessage(data);
+        // Calculate the offset of the target div relative to the parent container
+        var offset = topMessageDiv.offset().top - $("#chat-messages").offset().top;
+        // Bring the target div into view by setting the scrollTop property of the parent container
+        $("#chat-messages").scrollTop(offset - 16);
+    })
+
     // Join the Chat
     $(document).on('click', '#chat-list li', function(e){
         e.preventDefault();
         let chatId = $(this).attr('data-chatId');
         let previousChatId = $("#activeChatId").val();
+        morePageAvailable = true;
         socket.emit('join', { chatId: chatId, previousChatId: previousChatId });
     })
 
@@ -169,6 +225,15 @@ $(document).ready (() => {
     $("#message-input").keyup(function(e) {
         if (e.key === 'Enter') {
             sendMessage();
+        }
+    });
+
+    // Fetch more messages when scrolling to the top
+    $('#chat-messages').on('scroll', function () {
+        if (($(this).scrollTop() === 0) && (morePageAvailable === true)) {
+            let chat_id = $("#activeChatId").val();
+            let oldest_msg_time = $("#chat-messages .timeDetailsDiv:first").data('timestamp');
+            socket.emit('fetch-more-messages', { chatId: chat_id, oldest_msg_time: oldest_msg_time });
         }
     });
 

@@ -139,17 +139,24 @@ class Message(Document):
 
     @staticmethod
     @reconnect
-    def fetch_messages(chat_group_id, email):
+    def fetch_messages(chat_group_id, email, max_timestamp=None, item_count=20):
         """Fetch the messages in a chat group"""
         user = User.fetch_user(email)
         chat_group = ChatGroup.objects.get(id=chat_group_id)
-        messages = Message.objects(chat_group=chat_group).order_by('timestamp')
+        if max_timestamp is None:
+            messages = Message.objects(chat_group=chat_group).order_by('-timestamp').limit(
+                int(item_count))
+        else:
+            messages = Message.objects(chat_group=chat_group, timestamp__lt=max_timestamp).order_by('-timestamp').limit(
+                int(item_count))
+        messages = sorted(messages, key=lambda x: x.timestamp)
         return_data = []
         for msg in messages:
             sent_time = msg.timestamp.replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Asia/Kolkata'))
             data = {
                 'sender': msg.sender.email, 'content': msg.content,
                 'timestamp': sent_time.strftime('%b %d, %Y %I:%M %p'),
+                'str_timestamp': str(msg.timestamp),
                 'read': user in msg.read
             }
             return_data.append(data)
