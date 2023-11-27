@@ -28,6 +28,7 @@ zipp = "==3.17.0"
 pytz = "*"
 mongoengine = "*"
 flask-socketio = "*"
+celery = "*"
 
 [dev-packages]
 

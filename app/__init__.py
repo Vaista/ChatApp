@@ -1,11 +1,15 @@
 from flask import Flask, redirect, url_for
+
 from app.database.database import initialize_db, close_db
 
 from app.user_auth import login, signup, logout
 from app.chat_screen import chat_screen
-from app.chat_screen.events import socketio
 from app.add_friends import add_friends, user_friends
 from app.helpers.auth_helpers import current_user, login_required, redirect_logged_in_users
+
+from app.chat_screen.events import socketio
+from app.extensions.celery_ext import celery_init_app
+from app.tasks.celery_run import run_scheduled_tasks
 
 
 def create_app():
@@ -38,15 +42,20 @@ def create_app():
     app.register_blueprint(signup.signup_bp, url_prefix='/signup')
     app.register_blueprint(logout.logout_bp, url_prefix='/logout')
 
+    # Celery Initialization
+    celery = celery_init_app(app)
+
+    celery.autodiscover_tasks(run_scheduled_tasks)
+
     @app.route('/')
     def home():
         """Home route, redirected to Chat page"""
         return redirect(url_for('chat_screen_bp.chat_home'))
 
     # Register teardown function
-    # @app.teardown_appcontext
-    # def teardown_db(exception=None):
-    #     close_db(exception)
+    @app.teardown_appcontext
+    def teardown_db(exception=None):
+        close_db(exception)
 
     # Initialize Socket-IO
     socketio.init_app(app)

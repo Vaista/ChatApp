@@ -280,3 +280,7 @@ fabric.properties
 /.idea/ChatApp.iml
 /.idea/misc.xml
 /.idea/modules.xml
+/cli_commands.py
+/celerybeat-schedule.bak
+/celerybeat-schedule.dat
+/celerybeat-schedule.dir

@@ -3,7 +3,7 @@ from flask import session, request
 from flask_socketio import join_room, leave_room
 
 from app.chat_screen.helpers import get_chat_list
-from app.chat_screen.socket_extension import socketio
+from app.extensions.socket_ext import socketio
 from app.database.models import ChatGroup, User, Message, ConnectedUser
 from app.helpers.auth_helpers import login_required
 
