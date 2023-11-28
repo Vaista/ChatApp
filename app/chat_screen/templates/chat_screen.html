@@ -32,10 +32,12 @@
                     <input id="activeChatId" hidden />
                     <div class="ps-2 pe-4 py-1 rounded-2" id="chat-messages">
                     </div>
-                    <div class="list-unstyled">
-                        <div class="bg-white mb-3">
-                            <div class="form-outline">
-                                <textarea class="form-control" id="message-input" rows="4" placeholder="Enter your Message..."></textarea>
+                    <div class="bg-white mb-2">
+                        <div class="input-container" id="inputContainer">
+                            <textarea class="form-control mt-2" id="message-input" placeholder="Enter your Message..."></textarea>
+                            <div class="emoji-picker" id="emojiPicker"><emoji-picker></emoji-picker></div>
+                            <div class="emoji-button" id="emojiButton">
+                                <span class="emoji">😊</span>
                             </div>
                         </div>
                     </div>
@@ -175,7 +177,15 @@
 
 {% endblock %}
 {% block js %}
+    <!-- Emoji Picker CDN -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+
+    <!-- Twemoji CDN - For Emoji Rendering -->
+    <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
+
+    <!-- Socket IO CDN -->
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+
     <script src="{{ url_for('chat_screen_bp.static', filename='js/chat_screen.js') }}"></script>
     <script src="{{ url_for('chat_screen_bp.static', filename='js/events.js') }}"></script>
     <script src="{{ url_for('chat_screen_bp.static', filename='js/search_user_add_friends.js') }}"></script>

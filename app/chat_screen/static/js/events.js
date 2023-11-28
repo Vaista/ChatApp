@@ -1,5 +1,22 @@
 $(document).ready (() => {
 
+    // Function to check if the browser supports emoji rendering
+    function supportsEmojiRendering() {
+        // Create a test div
+        let $testElement = $('<div>').html('😀');
+
+        // Append the test div to the body
+        $('body').append($testElement);
+
+        // Check if the HTML content of the test div is equal to the expected emoji
+        let isSupported = $testElement.html() === '😀';
+
+        // Remove the test div from the body
+        $testElement.remove();
+
+        return isSupported;
+    }
+
     const currentUserEmail = $("#currentUserEmail").val();
     var morePageAvailable = true;
 
@@ -52,6 +69,8 @@ $(document).ready (() => {
 
         $('#chat-messages').empty();
 
+        let emojiSupport = supportsEmojiRendering();
+
         if (messages.length === 0) {
             // No messages present
             let html = '<div class="chatHistoryNotificationDiv" id="noMsgAvailable"><p class="chatHistoryNotification"><span>No message history found. Start a New Conversation here.</span></p></div>';
@@ -64,6 +83,14 @@ $(document).ready (() => {
 
             let html = '';
             messages.forEach(function (msg) {
+
+                let content = '';
+
+                if (emojiSupport) {
+                    content = msg.content;
+                } else {
+                    content = twemoji.parse(msg.content);
+                }
 
                 if (msg.read === false) {
                     unreadMsgStart = true;
@@ -80,7 +107,7 @@ $(document).ready (() => {
                 }
 
                 html += `<div class="${isSenderClass} individualMsgDiv my-1">
-                            <p class="mb-0 rounded-2">${msg.content}</p><br/>
+                            <p class="mb-0 rounded-2">${content}</p><br/>
                             <span class="text-muted timeDetailsDiv" data-timestamp="${msg.str_timestamp}"><sub>${msg.timestamp}</sub></span>
                         </div>`;
             });
@@ -98,11 +125,21 @@ $(document).ready (() => {
 
     function appendChatMessage(data) {
 
+        let emojiSupport = supportsEmojiRendering();
+
         let messages = data.messages;
         if (messages.length > 0) {
 
             let html = '';
             messages.forEach(function (msg) {
+
+                let content;
+
+                if (emojiSupport) {
+                    content = msg.content;
+                } else {
+                    content = twemoji.parse(msg.content);
+                }
 
                 let isSenderClass = 'msgReceiverClass';
                 if (currentUserEmail.trim() === msg.sender.trim()) {
@@ -110,7 +147,7 @@ $(document).ready (() => {
                 }
 
                 html += `<div class="${isSenderClass} individualMsgDiv my-1">
-                            <p class="mb-0 rounded-2">${msg.content}</p><br/>
+                            <p class="mb-0 rounded-2">${content}</p><br/>
                             <span class="text-muted timeDetailsDiv" data-timestamp="${msg.str_timestamp}"><sub>${msg.timestamp}</sub></span>
                         </div>`;
             });
@@ -152,7 +189,7 @@ $(document).ready (() => {
         }
 
         html += `<div class="${isSenderClass} individualMsgDiv my-1">
-                    <p class="mb-0 rounded-2">${data.message}</p><br/>
+                    <p class="mb-0 rounded-2">${twemoji.parse(data.message)}</p><br/>
                     <span class="text-muted timeDetailsDiv" data-timestamp="${data.str_timestamp}"><sub>${data.timestamp}</sub></span>
                 </div>`;
 
@@ -260,7 +297,5 @@ $(document).ready (() => {
         let chat_id = $("#activeChatId").val();
         socket.emit('refresh-chat-list', { email: currentUserEmail, chat_id: chat_id });
     }, 120000);
-
-
 
 });

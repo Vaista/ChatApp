@@ -90,6 +90,7 @@ def handle_send_message(data):
     chat_group_id = data.get('chat_id')
 
     message_content = data.get('message')
+    message_content = message_content.strip() if message_content is not None else message_content
     email = session['email']
 
     # Update last active time of user

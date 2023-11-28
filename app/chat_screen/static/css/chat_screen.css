@@ -44,7 +44,7 @@
 }
 
 #chat-messages {
-    height: 280px;
+    height: 335px;
     overflow-y: scroll;
     background: white;
     margin-bottom: 2px;
@@ -127,4 +127,43 @@
 .chatHistoryNotification span {
     padding: 4px;
     background: #fff;
+}
+
+#message-input {
+    padding-right: 40px;
+    resize: none;
+    overflow-y: hidden;
+}
+
+.input-container {
+    position: relative;
+}
+
+emoji-picker {
+  width: 320px;
+  height: 330px;
+  --emoji-size: 18px;
+}
+
+.emoji-picker {
+    display: none;
+    position: absolute;
+    top: -330px;
+    right: 0;
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.emoji-button {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+
+.individualMsgDiv img.emoji {
+    width: 1rem;
+    height: 1rem;
+    margin-left: 4px;
 }
