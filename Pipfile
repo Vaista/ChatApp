@@ -29,6 +29,8 @@ pytz = "*"
 mongoengine = "*"
 flask-socketio = "*"
 celery = "*"
+flask-cors = "*"
+gevent = "*"
 
 [dev-packages]
 

@@ -14,6 +14,10 @@
     font-size: 12px;
 }
 
+.primaryTextColor {
+    color: #3A3A3A;
+}
+
 .parentContainer {
     max-width: 500px;
     padding-top: 7.5%;
@@ -34,6 +38,28 @@
 
 .modal-content {
     min-height: 450px;
+}
+
+/* ===== Scrollbar CSS ===== */
+/* Firefox */
+* {
+    scrollbar-width: auto;
+    scrollbar-color: #0dcfa0 #ffffff;
+}
+
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+    width: 16px;
+}
+
+*::-webkit-scrollbar-track {
+    background: #ffffff;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: #0dcfa0;
+    border-radius: 10px;
+    border: 3px solid #ffffff;
 }
 
 @media screen and (max-width: 760px){

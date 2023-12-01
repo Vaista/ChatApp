@@ -1,4 +1,4 @@
-from mongoengine import Document, StringField, DateTimeField, ReferenceField, ListField, Q
+from mongoengine import Document, StringField, DateTimeField, ReferenceField, ListField, IntField, Q
 
 from datetime import datetime
 from dotenv import load_dotenv
@@ -113,6 +113,13 @@ class ChatGroup(Document):
 
     @staticmethod
     @reconnect
+    def fetch_group_participants(chat_id):
+        """Fetch Group Participants"""
+        chat_group = ChatGroup.fetch_group_by_id(chat_id)
+        return chat_group.participants
+
+    @staticmethod
+    @reconnect
     def update_last_activity(chat_id):
         """Update the last activity of the chat"""
         chat = ChatGroup.objects.get(id=chat_id)
@@ -128,6 +135,9 @@ class Message(Document):
     content = StringField(required=True)
     timestamp = DateTimeField(default=lambda: datetime.now(pytz.timezone('Asia/Kolkata')))
     read = ListField(ReferenceField(User, reverse_delete_rule=4), default=[])
+    message_type = StringField(choices=("text", "call"), default="text")
+    call_status = StringField(choices=("calling", "declined", "missed", "ongoing", "answered"))
+    call_duration = IntField()
 
     meta = {"db_alias": alias, "collection": "message"}
 
@@ -141,9 +151,32 @@ class Message(Document):
 
     @staticmethod
     @reconnect
+    def initiate_call(sender, chat_group, offer):
+        """Save the call details in the chat with message type of call"""
+        Message(sender=sender, chat_group=chat_group, content=offer, message_type='call', call_status='calling').save()
+
+    @staticmethod
+    @reconnect
+    def update_call_status(chat_id, status):
+        """Update the status of the call"""
+        chat_group = ChatGroup.fetch_group_by_id(chat_id)
+        message = Message.objects(chat_group=chat_group, message_type='call').order_by('-timestamp').first()
+        if status in ("calling", "declined", "missed", "ongoing", "answered"):
+            message.call_status = status
+            message.save()
+
+    @staticmethod
+    @reconnect
+    def fetch_last_call_in_chat(chat_id):
+        """Fetch the last call in a chat group"""
+        chat_group = ChatGroup.fetch_group_by_id(chat_id)
+        return Message.objects(chat_group=chat_group, message_type='call').order_by('-timestamp').first()
+
+    @staticmethod
+    @reconnect
     def fetch_last_message(chat_group):
         """Fetch the last message in a chat group"""
-        message = Message.objects(chat_group=chat_group).order_by('-timestamp').first()
+        message = Message.objects(chat_group=chat_group, message_type__ne='call').order_by('-timestamp').first()
         message = '' if message is None else message.content
         return message
 
@@ -164,9 +197,13 @@ class Message(Document):
         for msg in messages:
             sent_time = msg.timestamp.replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Asia/Kolkata'))
             data = {
-                'sender': msg.sender.email, 'content': msg.content,
+                'sender': msg.sender.email,
+                'content': msg.content,
                 'timestamp': sent_time.strftime('%b %d, %Y %I:%M %p'),
                 'str_timestamp': str(msg.timestamp),
+                'message_type': msg.message_type,
+                'call_status': msg.call_status,
+                'call_duration': msg.call_duration,
                 'read': user in msg.read
             }
             return_data.append(data)
@@ -225,6 +262,12 @@ class ConnectedUser(Document):
     def fetch_connected_users(chat_group):
         """Fetch connected users to a chat group"""
         return ConnectedUser.objects(chat_group=chat_group)
+
+    @staticmethod
+    @reconnect
+    def fetch_sockets_for_users(user):
+        """Fetch the sockets for a given connected user"""
+        return ConnectedUser.objects(user=user)
 
     @staticmethod
     @reconnect

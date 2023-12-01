@@ -6,6 +6,11 @@
     min-width: fit-content;
 }
 
+#chat-list {
+    height: 340px;
+    overflow-y: scroll;
+}
+
 #chat-list li {
     cursor: pointer;
 }
@@ -44,7 +49,7 @@
 }
 
 #chat-messages {
-    height: 335px;
+    height: 325px;
     overflow-y: scroll;
     background: white;
     margin-bottom: 2px;
@@ -166,4 +171,28 @@ emoji-picker {
     width: 1rem;
     height: 1rem;
     margin-left: 4px;
+}
+
+.modal-avatar {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+#remoteVideo {
+    width: 97vw;
+    height: auto;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+}
+
+#localVideo {
+    width: 15%;
+    height: auto;
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 10000;
 }

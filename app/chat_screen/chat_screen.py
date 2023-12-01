@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, current_app, request, jsonify
 import requests
+import json
 
 from app.helpers.auth_helpers import login_required, current_user
 from app.helpers.tokens import encrypt_token, decrypt_token
@@ -51,3 +52,13 @@ def start_new_one_on_one_chat():
     user = User.fetch_user(email)
     chat_group = ChatGroup.create_one_on_one_chat(current_user.email, email)
     return jsonify({'status': 'success'}), 200
+
+
+@chat_screen_bp.route('/audio_video_call/rtc_offers/get_offer/')
+@login_required
+def fetch_rtc_offer():
+    """Fetch RTC Offer for a call"""
+    chat_id = request.args.get('chat_id')
+    if chat_id:
+        message = Message.fetch_last_call_in_chat(chat_id)
+        return jsonify({'status': 'success', 'offer': json.loads(message.content)}), 200

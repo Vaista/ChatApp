@@ -1,6 +1,7 @@
 from datetime import datetime
 from flask import session, request
 from flask_socketio import join_room, leave_room
+import json
 
 from app.chat_screen.helpers import get_chat_list
 from app.extensions.socket_ext import socketio
@@ -141,3 +142,68 @@ def refresh_chat_list(data):
     # Emit the 'chatList' event to the specific socket ID
     socketio.emit('chatList', {'chatList': get_chat_list(email), 'chatId': str(chat_id), 'source': 'refresh_chat_list'},
                   room=request.sid)
+
+
+# Call Events
+
+@socketio.on('initiateCall')
+@login_required
+def handle_initiate_call(data):
+    """Initiating a call event"""
+    caller_email = data.get('caller')
+    caller = User.fetch_user(caller_email)
+    chat_id = data.get('chat_id')
+    call_type = data.get('type')
+    offer = data.get('offer')
+    connected_users = ChatGroup.fetch_group_participants(chat_id)
+    for user in connected_users:
+        if user.email != caller_email:
+            for connection in ConnectedUser.fetch_sockets_for_users(user):
+                socketio.emit('incomingCall', {
+                    'type': call_type,
+                    'caller_name': f'{caller.first_name} {caller.last_name}',
+                    'chat_id': chat_id,
+                    'offer': offer
+                }, room=connection.socket_id)
+    chat_group = ChatGroup.fetch_group_by_id(chat_id)
+    Message.initiate_call(caller, chat_group, json.dumps(offer))
+    print('initiating a call event')
+
+
+@socketio.on('answer-call')
+@login_required
+def handle_call_answered_by_callee(data):
+    """Handle Call Answered. Emit the answer back to caller"""
+    chat_id = data.get('chat_id')
+    Message.update_call_status(chat_id, 'ongoing')
+    call = Message.fetch_last_call_in_chat(chat_id)
+    caller = call.sender
+    for connection in ConnectedUser.fetch_sockets_for_users(caller):
+        socketio.emit('callGotAnswered', data, room=connection.socket_id)
+
+
+@socketio.on('newIceCandidate')
+@login_required
+def handle_ice_candidate(data):
+    """Emitting ICE Candidate Event"""
+    chat_id = data.get('chat_id')
+    connected_users = ChatGroup.fetch_group_participants(chat_id)
+    for user in connected_users:
+        for connection in ConnectedUser.fetch_sockets_for_users(user):
+            socketio.emit('ice_candidate', {'candidate': data.get('candidate')}, room=connection.socket_id)
+
+
+@socketio.on('changeCallStatus')
+@login_required
+def handle_change_call_status(data):
+    """Update the status of the call made."""
+    chat_id = data.get('chat_id')
+    status = data.get('status')
+    if status in ["calling", "declined", "missed", "ongoing", "answered"]:
+        Message.update_call_status(chat_id, status)
+    if status == 'declined':
+        # Update the frontend of the caller.
+        call = Message.fetch_last_call_in_chat(chat_id)
+        caller = call.sender
+        for connection in ConnectedUser.fetch_sockets_for_users(caller):
+            socketio.emit('callGotRejected', room=connection.socket_id)

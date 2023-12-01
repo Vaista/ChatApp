@@ -1,4 +1,6 @@
 from flask import Flask, redirect, url_for
+from flask_cors import CORS
+from gevent import monkey
 
 from app.database.database import initialize_db, close_db
 
@@ -15,6 +17,8 @@ from app.tasks.celery_run import run_scheduled_tasks
 def create_app():
     """Function for creating a new flask app"""
     app = Flask(__name__)
+    CORS(app)
+    monkey.patch_all()
 
     app.config.from_object('app.config.app_config')
 
@@ -53,11 +57,11 @@ def create_app():
         return redirect(url_for('chat_screen_bp.chat_home'))
 
     # Register teardown function
-    @app.teardown_appcontext
-    def teardown_db(exception=None):
-        close_db(exception)
+    # @app.teardown_appcontext
+    # def teardown_db(exception=None):
+    #     close_db(exception)
 
     # Initialize Socket-IO
-    socketio.init_app(app)
+    socketio.init_app(app, async_mode='gevent')
 
     return app
