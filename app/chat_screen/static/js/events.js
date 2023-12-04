@@ -369,7 +369,7 @@ $(document).ready (() => {
 
                 peerConnection.addEventListener('track', async (event) => {
                     const [remoteStream] = event.streams;
-                    remoteVideo.srcObject = remoteStream[0];
+                    remoteVideo.srcObject = remoteStream;
                 });
 
                 // Create Offer
@@ -536,7 +536,7 @@ $(document).ready (() => {
 
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia(constraints)
-            .then(stream => {
+            .then(async function(stream) {
                 localVideo.srcObject = stream;
 
                 peerConnection = new RTCPeerConnection(RTCConfiguration);
@@ -547,7 +547,7 @@ $(document).ready (() => {
                     remoteVideo.srcObject = remoteStream;
                 });
 
-                peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
                     .then(() => peerConnection.createAnswer())
                     .then(answer => peerConnection.setLocalDescription(answer))
                     .then(() => {
@@ -575,7 +575,7 @@ $(document).ready (() => {
         }
     }
 
-    socket.on('callGotAnswered', function(data) {
+    socket.on('callGotAnswered', async function(data) {
 
         clearTimeout(outgoingCallTimeout);
         localStorage.removeItem('outgoingCall');
@@ -583,7 +583,7 @@ $(document).ready (() => {
 
         let chat_id = $("#outgoingCallChatId").val();
 
-        peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer))
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer))
             .then(() => {
                 // Listen for local ICE candidates on the local RTCPeerConnection
                 peerConnection.addEventListener('icecandidate', event => {
@@ -600,11 +600,11 @@ $(document).ready (() => {
             });
     });
 
-    socket.on('ice_candidate', function(data) {
+    socket.on('ice_candidate', async function(data) {
         if (data.candidate) {
             try {
-                let candidate_to_add = new RTCIceCandidate(data.candidate)
-                peerConnection.addIceCandidate(candidate_to_add);
+                let candidate_to_add = await new RTCIceCandidate(data.candidate)
+                await peerConnection.addIceCandidate(candidate_to_add);
             } catch (e) {
                 console.error('Error adding received ice candidate', e);
             }
