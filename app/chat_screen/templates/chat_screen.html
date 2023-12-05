@@ -253,11 +253,16 @@
     <div class="modal fade" id="activeCallModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog  modal-fullscreen">
             <div class="modal-content">
-                <div class="modal-body">
+                <div class="modal-body p-0">
                     <div id="videos">
-                        <video id="remoteVideo" autoplay playsinline></video>
-                        <video id="localVideo" autoplay muted playsinline></video>
+                        <video id="remoteVideo" class="big_video video-item" autoplay playsinline></video>
+                        <video id="localVideo" class="small_video video-item" autoplay muted playsinline></video>
                     </div>
+<!--                    <div id="controls-bar" class="d-flex justify-content-around">-->
+<!--                        <button class="control-btn">Disconnect</button>-->
+<!--                        <button class="control-btn">Mute Mic</button>-->
+<!--                        <button class="control-btn">Toggle Camera</button>-->
+<!--                    </div>-->
                 </div>
             </div>
         </div>

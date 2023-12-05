@@ -327,8 +327,7 @@ $(document).ready (() => {
                 urls: ['stun:stun.l.google.com:19302',
                         'stun:stun1.l.google.com:19302',
                         'stun:stun2.l.google.com:19302',
-                        'stun:stun3.l.google.com:19302',
-                        'stun:stun4.l.google.com:19302'
+                        'stun:stun3.l.google.com:19302'
                     ]
             },
         ]
@@ -351,11 +350,12 @@ $(document).ready (() => {
             // Define Constraints for getting Media
             let constraints = {
                 'video': true,
-                'audio': true
+                'audio': true,
             }
             if (type === 'audio') {
                 constraints['video'] = false;
             }
+
             // Fetch User Media
             navigator.mediaDevices.getUserMedia(constraints)
             .then(stream => {
@@ -540,6 +540,7 @@ $(document).ready (() => {
                 localVideo.srcObject = stream;
 
                 peerConnection = new RTCPeerConnection(RTCConfiguration);
+
                 stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
 
                 peerConnection.addEventListener('track', async (event) => {
@@ -547,8 +548,12 @@ $(document).ready (() => {
                     remoteVideo.srcObject = remoteStream;
                 });
 
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
-                    .then(() => peerConnection.createAnswer())
+                var remoteDescription = await new RTCSessionDescription(offer);
+                await peerConnection.setRemoteDescription(remoteDescription);
+
+                peerConnection.onicecandidate = handleICECandidate;
+
+                peerConnection.createAnswer()
                     .then(answer => peerConnection.setLocalDescription(answer))
                     .then(() => {
                         socket.emit('answer-call', { answer: peerConnection.localDescription, chat_id: chat_id });
@@ -556,13 +561,6 @@ $(document).ready (() => {
                     .catch(error => {
                         console.error('Error creating answer:', error);
                     });
-
-                // Listen for local ICE candidates on the local RTCPeerConnection
-                peerConnection.addEventListener('icecandidate', event => {
-                    if (event.candidate) {
-                        socket.emit('newIceCandidate', {'candidate': event.candidate, 'chat_id': chat_id});
-                    }
-                });
 
                 $("#activeCallModal").modal('show');
             })
@@ -575,6 +573,13 @@ $(document).ready (() => {
         }
     }
 
+    function handleICECandidate(event) {
+        let chat_id = $("#incomingCallChatId").val();
+        if (event.candidate) {
+            socket.emit('newIceCandidate', {'candidate': event.candidate, 'chat_id': chat_id, 'email': currentUserEmail});
+        }
+    }
+
     socket.on('callGotAnswered', async function(data) {
 
         clearTimeout(outgoingCallTimeout);
@@ -583,31 +588,28 @@ $(document).ready (() => {
 
         let chat_id = $("#outgoingCallChatId").val();
 
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer))
-            .then(() => {
-                // Listen for local ICE candidates on the local RTCPeerConnection
-                peerConnection.addEventListener('icecandidate', event => {
-                    if (event.candidate) {
-                        socket.emit('newIceCandidate', {'candidate': event.candidate, 'chat_id': chat_id});
-                    }
-                });
-                console.log('Call answered successfully!');
+        var RTCAnswer = await new RTCSessionDescription(data.answer);
+        await peerConnection.setRemoteDescription(RTCAnswer);
 
-                $("#activeCallModal").modal('show');
-            })
-            .catch(error => {
-                console.error('Error setting remote description:', error);
-            });
+        console.log('Remote description set successfully!');
+
+        // Listen for local ICE candidates on the local RTCPeerConnection
+        peerConnection.onicecandidate = handleICECandidate;
+
+        $("#activeCallModal").modal('show');
     });
 
     socket.on('ice_candidate', async function(data) {
         if (data.candidate) {
-            try {
-                let candidate_to_add = await new RTCIceCandidate(data.candidate)
-                await peerConnection.addIceCandidate(candidate_to_add);
-            } catch (e) {
-                console.error('Error adding received ice candidate', e);
-            }
+            setTimeout(async function() {
+                try {
+                    let candidate_to_add = await new RTCIceCandidate(data.candidate)
+                    await peerConnection.addIceCandidate(data.candidate);
+                    console.log('added');
+                } catch (e) {
+                    console.error('Error adding received ice candidate', e);
+                }
+            }, 3000);
         }
     });
 
