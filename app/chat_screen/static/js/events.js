@@ -591,8 +591,6 @@ $(document).ready (() => {
         var RTCAnswer = await new RTCSessionDescription(data.answer);
         await peerConnection.setRemoteDescription(RTCAnswer);
 
-        console.log('Remote description set successfully!');
-
         // Listen for local ICE candidates on the local RTCPeerConnection
         peerConnection.onicecandidate = handleICECandidate;
 
@@ -605,12 +603,44 @@ $(document).ready (() => {
                 try {
                     let candidate_to_add = await new RTCIceCandidate(data.candidate)
                     await peerConnection.addIceCandidate(data.candidate);
-                    console.log('added');
                 } catch (e) {
                     console.error('Error adding received ice candidate', e);
                 }
             }, 3000);
         }
+    });
+
+    // Toggle Mic
+    $('#ToggleMic').click(function() {
+        var audioTracks = localVideo.srcObject.getAudioTracks();
+        audioTracks.forEach(track => {
+            track.enabled = !track.enabled;
+        });
+        $('#mic_on_svg').toggleClass('d-none');
+        $('#mic_off_svg').toggleClass('d-none');
+    });
+
+    // Toggle Camera
+    $('#toggleCamera').click(function() {
+        const videoTracks = localVideo.srcObject.getVideoTracks();
+        videoTracks.forEach(track => {
+            track.enabled = !track.enabled;
+        });
+        $('#camera_on_svg').toggleClass('d-none');
+        $('#camera_off_svg').toggleClass('d-none');
+    });
+
+    // Add this inside your document ready or initialization code
+    $('#endActiveCall').click(function() {
+        // Close the connection and stop local media
+        peerConnection.close();
+        localVideo.srcObject.getTracks().forEach(track => track.stop());
+
+        // Additional cleanup if needed
+
+        // Emit a signal to inform the other party about ending the call
+        // let chat_id = /* get your chat_id */;
+        // socket.emit('endCall', { chat_id: chat_id });
     });
 
     let storedInCall = localStorage.getItem('incomingCall');

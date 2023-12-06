@@ -186,6 +186,13 @@ emoji-picker {
 
 #activeCallModal .modal-body {
     background: #252528;
+    height: 100%;
+    overflow: hidden;
+}
+
+#activeCallModal .modal-content {
+    height: 100%;
+    overflow: hidden;
 }
 
 .big_video {
@@ -197,10 +204,23 @@ emoji-picker {
 }
 
 .small_video {
-    width: 18%;
+    width: 15%;
     height: auto;
     position: absolute;
-    bottom: 16px;
+    bottom: 70px;
     right: 16px;
     z-index: 10000;
+}
+
+#controls-bar {
+    background: #44447E;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+@media only screen and (max-width: 600px) {
+    .small_video {
+        width: 20%;
+    }
 }

@@ -1,6 +1,8 @@
+from gevent import monkey
+monkey.patch_all()
+
 from flask import Flask, redirect, url_for
 from flask_cors import CORS
-from gevent import monkey
 
 from app.database.database import initialize_db, close_db
 
@@ -18,7 +20,6 @@ def create_app():
     """Function for creating a new flask app"""
     app = Flask(__name__)
     CORS(app)
-    monkey.patch_all()
 
     app.config.from_object('app.config.app_config')
 

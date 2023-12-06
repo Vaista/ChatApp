@@ -51,4 +51,27 @@ $(document).ready (() => {
         });
     });
 
+    // Switch the video sizes on click
+
+    function toggleVideoClasses(videoObj) {
+        if (videoObj.hasClass('big_video')) {
+            videoObj.removeClass('big_video').addClass('small_video');
+        } else if (videoObj.hasClass('small_video')) {
+            videoObj.removeClass('small_video').addClass('big_video');
+        }
+    }
+
+    var remoteVideoObj = $("#remoteVideo");
+    var localVideoObj = $("#localVideo");
+
+    remoteVideoObj.on('click', function () {
+        toggleVideoClasses(remoteVideoObj);
+        toggleVideoClasses(localVideoObj);
+    });
+
+    localVideoObj.on('click', function () {
+        toggleVideoClasses(localVideoObj);
+        toggleVideoClasses(remoteVideoObj);
+    });
+
 });
