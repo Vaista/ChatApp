@@ -86,12 +86,12 @@
     color: #3A3A3A;
 }
 
-.msgSenderClass p {
+.msgSenderClass .content {
     background: #92EB93;
     padding: 3px 6px 3px 35px;
 }
 
-.msgReceiverClass p {
+.msgReceiverClass .content {
     background: #cff4fc;
     padding: 3px 35px 3px 6px;
 }
@@ -132,6 +132,33 @@
 .chatHistoryNotification span {
     padding: 4px;
     background: #fff;
+}
+
+.msgCallRow {
+    background: #fff;
+}
+
+.call_duration_text {
+    font-size: 14px;
+}
+
+.msgCallRow .svgContainerParent {
+    text-align: center;
+    align-self: center;
+}
+
+.msgCallRow .svgContainer {
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+}
+
+.msgSenderClass .msgCallRow .svgContainer {
+    background: #92EB93;
+}
+
+.msgReceiverClass .msgCallRow .svgContainer {
+    background: #cff4fc;
 }
 
 #message-input {

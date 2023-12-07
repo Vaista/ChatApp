@@ -65,27 +65,73 @@ $(document).ready (() => {
         $("#chat-list").empty().html(html);
     }
 
+    function calculateTimeDuration(seconds) {
+
+        if (!Number.isInteger(seconds) || seconds % 1 !== 0) {
+            return "";
+        }
+        var hours = Math.floor(seconds / 3600);
+        var minutes = Math.floor((seconds % 3600) / 60);
+        var remainingSeconds = seconds % 60;
+
+        var durationStr = "";
+
+        if (hours > 0) {
+            durationStr += hours + " " + (hours === 1 ? "hour" : "hours");
+            if (minutes > 0) {
+                durationStr += " " + minutes + " " + (minutes === 1 ? "minute" : "minutes");
+            }
+        } else if (minutes > 0) {
+            durationStr += minutes + " " + (minutes === 1 ? "minute" : "minutes");
+        } else {
+            durationStr += remainingSeconds + " " + (remainingSeconds === 1 ? "second" : "seconds");
+        }
+
+        return durationStr;
+    }
+
     function getCallHTML(msg) {
 
         let call_text = '';
+        let duration_text = '';
+        let svg_fill = '#3C717D';
 
         if (msg.call_status === 'calling') {
-            call_text = 'Out Going Call Made';
+            call_text = 'Ongoing Call';
         } else if (msg.call_status === 'declined') {
             call_text = 'Call Declined';
         } else if (msg.call_status === 'missed') {
-            call_text = 'Call Missed';
+            call_text = 'Missed Call';
         } else if (msg.call_status === 'ongoing') {
             call_text = 'Ongoing Call';
         } else if (msg.call_status === 'ended') {
-            call_text = 'Call has ended';
+            call_text = 'Call Ended';
+            duration_text = calculateTimeDuration(+msg.call_duration);
         }
 
-        let html = `<div class="chatHistoryNotificationDiv individualMsgDiv">
-                        <p class="chatHistoryNotification">
-                            <span>${call_text}</span>
-                            <span class="d-none timeDetailsDiv" data-timestamp="${msg.str_timestamp}"></span>
-                        </p>
+        let isSenderClass = 'msgReceiverClass';
+        if (currentUserEmail.trim() === msg.sender.trim()) {
+            isSenderClass = 'msgSenderClass';
+            svg_fill = '#496B49';
+        }
+
+        let html = `<div class="${isSenderClass} individualMsgDiv my-1">
+                        <div class="content rounded-2 d-inline-block">
+                            <div class="row m-1 msgCallRow rounded-2">
+                                <div class="col-3 svgContainerParent">
+                                    <div class="svgContainer">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
+                                        <path d="M21 16.42V19.9561C21 20.4811 20.5941 20.9167 20.0705 20.9537C19.6331 20.9846 19.2763 21 19 21C10.1634 21 3 13.8366 3 5C3 4.72371 3.01545 4.36687 3.04635 3.9295C3.08337 3.40588 3.51894 3 4.04386 3H7.5801C7.83678 3 8.05176 3.19442 8.07753 3.4498C8.10067 3.67907 8.12218 3.86314 8.14207 4.00202C8.34435 5.41472 8.75753 6.75936 9.3487 8.00303C9.44359 8.20265 9.38171 8.44159 9.20185 8.57006L7.04355 10.1118C8.35752 13.1811 10.8189 15.6425 13.8882 16.9565L15.4271 14.8019C15.5572 14.6199 15.799 14.5573 16.001 14.6532C17.2446 15.2439 18.5891 15.6566 20.0016 15.8584C20.1396 15.8782 20.3225 15.8995 20.5502 15.9225C20.8056 15.9483 21 16.1633 21 16.42Z" fill="${svg_fill}"></path>
+                                    </svg>
+                                    </div>
+                                </div>
+                                <div class="col pb-1">
+                                    <p class="mb-0 mt-1 text-nowrap">${call_text}</p><br/>
+                                    <small class="mb-0 call_duration_text text-muted">${duration_text}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="text-muted timeDetailsDiv d-block" data-timestamp="${msg.str_timestamp}"><sub>${msg.timestamp}</sub></span>
                     </div>`;
 
         return html;
@@ -111,9 +157,7 @@ $(document).ready (() => {
             messages.forEach(function (msg) {
 
                 if (msg.message_type === 'call') {
-
-                html += getCallHTML(msg);
-
+                    html += getCallHTML(msg);
                 } else {
                     let content = '';
 
@@ -138,7 +182,7 @@ $(document).ready (() => {
                     }
 
                     html += `<div class="${isSenderClass} individualMsgDiv my-1">
-                                <p class="mb-0 rounded-2">${content}</p><br/>
+                                <p class="mb-0 rounded-2 content">${content}</p><br/>
                                 <span class="text-muted timeDetailsDiv" data-timestamp="${msg.str_timestamp}"><sub>${msg.timestamp}</sub></span>
                             </div>`;
                 }
@@ -182,7 +226,7 @@ $(document).ready (() => {
                     }
 
                     html += `<div class="${isSenderClass} individualMsgDiv my-1">
-                                <p class="mb-0 rounded-2">${content}</p><br/>
+                                <p class="mb-0 content rounded-2">${content}</p><br/>
                                 <span class="text-muted timeDetailsDiv" data-timestamp="${msg.str_timestamp}"><sub>${msg.timestamp}</sub></span>
                             </div>`;
                 }
@@ -225,7 +269,7 @@ $(document).ready (() => {
         }
 
         html += `<div class="${isSenderClass} individualMsgDiv my-1">
-                    <p class="mb-0 rounded-2">${twemoji.parse(data.message)}</p><br/>
+                    <p class="mb-0 content rounded-2">${twemoji.parse(data.message)}</p><br/>
                     <span class="text-muted timeDetailsDiv" data-timestamp="${data.str_timestamp}"><sub>${data.timestamp}</sub></span>
                 </div>`;
 

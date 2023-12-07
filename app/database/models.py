@@ -210,6 +210,7 @@ class Message(Document):
                 'str_timestamp': str(msg.timestamp),
                 'message_type': msg.message_type,
                 'call_status': msg.call_status,
+                'call_type': msg.call_type,
                 'call_duration': msg.call_duration_seconds,
                 'read': user in msg.read
             }

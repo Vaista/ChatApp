@@ -42,6 +42,10 @@ def handle_join(data):
     if chat_id is None:
         chat_id = ChatGroup.fetch_recent_chat_id(email)
 
+    previous_chat_id = data.get('previousChatId')
+    if previous_chat_id is not None:
+        leave_room(request.sid)
+
     join_room(request.sid)
     print(f'Client joined room: {chat_id}')
 

@@ -44,6 +44,15 @@ def fetch_chat_group_name(group, active_user):
     return group_name
 
 
+def shorten_text(text):
+    """Shorten the text to 30 characters"""
+    max_length = 30
+    if len(text) <= max_length:
+        return text
+    else:
+        return text[:max_length-3].strip() + "..."
+
+
 def fetch_user_last_active(group, active_user):
     """Returns the name of chat to be rendered on the basis of the type of chat"""
     if group.type == 'one-on-one':
@@ -73,7 +82,7 @@ def get_chat_list(email):
         chat_list.append({
             'id': str(chat.id),
             'name': fetch_chat_group_name(chat, user),
-            'message': last_message,
+            'message': shorten_text(last_message),
             'unread_count': unread_message_count,
             'last_activity': calculate_time_ago(chat.last_activity),
             'is_active': fetch_user_last_active(chat, user)
