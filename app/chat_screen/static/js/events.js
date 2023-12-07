@@ -65,6 +65,32 @@ $(document).ready (() => {
         $("#chat-list").empty().html(html);
     }
 
+    function getCallHTML(msg) {
+
+        let call_text = '';
+
+        if (msg.call_status === 'calling') {
+            call_text = 'Out Going Call Made';
+        } else if (msg.call_status === 'declined') {
+            call_text = 'Call Declined';
+        } else if (msg.call_status === 'missed') {
+            call_text = 'Call Missed';
+        } else if (msg.call_status === 'ongoing') {
+            call_text = 'Ongoing Call';
+        } else if (msg.call_status === 'ended') {
+            call_text = 'Call has ended';
+        }
+
+        let html = `<div class="chatHistoryNotificationDiv individualMsgDiv">
+                        <p class="chatHistoryNotification">
+                            <span>${call_text}</span>
+                            <span class="d-none timeDetailsDiv" data-timestamp="${msg.str_timestamp}"></span>
+                        </p>
+                    </div>`;
+
+        return html;
+    }
+
     function updateChatMessages(messages) {
 
         $('#chat-messages').empty();
@@ -73,7 +99,7 @@ $(document).ready (() => {
 
         if (messages.length === 0) {
             // No messages present
-            let html = '<div class="chatHistoryNotificationDiv" id="noMsgAvailable"><p class="chatHistoryNotification"><span>No message history found. Start a New Conversation here.</span></p></div>';
+            let html = '<div class="chatHistoryNotificationDiv individualMsgDiv" id="noMsgAvailable"><p class="chatHistoryNotification"><span>No message history found. Start a New Conversation here.</span></p></div>';
             $('#chat-messages').html(html);
             morePageAvailable = false;
         } else {
@@ -86,17 +112,7 @@ $(document).ready (() => {
 
                 if (msg.message_type === 'call') {
 
-                    if (msg.call_status === 'calling') {
-                        html += '<div class="chatHistoryNotificationDiv"><p class="chatHistoryNotification"><span>Outgoing Call Made.</span></p></div>';
-                    } else if (msg.call_status === 'declined') {
-                        html += '<div class="chatHistoryNotificationDiv"><p class="chatHistoryNotification"><span>Call was declined.</span></p></div>';
-                    } else if (msg.call_status === 'missed') {
-                        html += '<div class="chatHistoryNotificationDiv"><p class="chatHistoryNotification"><span>Missed Call.</span></p></div>';
-                    } else if (msg.call_status === 'ongoing') {
-                        html += '<div class="chatHistoryNotificationDiv"><p class="chatHistoryNotification"><span>Call in Progress.</span></p></div>';
-                    } else if (msg.call_status === 'answered') {
-                        html += '<div class="chatHistoryNotificationDiv"><p class="chatHistoryNotification"><span>Call answered.</span></p></div>';
-                    }
+                html += getCallHTML(msg);
 
                 } else {
                     let content = '';
@@ -112,7 +128,7 @@ $(document).ready (() => {
                     }
 
                     if ((unreadMsgStart === true) && (unreadMsgReached === false)) {
-                        html += '<div class="chatHistoryNotificationDiv" id="newMessageNotification"><p class="chatHistoryNotification"><span>New unread messages below</span></p></div>';
+                        html += '<div class="chatHistoryNotificationDiv individualMsgDiv" id="newMessageNotification"><p class="chatHistoryNotification"><span>New unread messages below</span></p></div>';
                         unreadMsgReached = true;
                     }
 
@@ -149,24 +165,27 @@ $(document).ready (() => {
 
             let html = '';
             messages.forEach(function (msg) {
-
-                let content;
-
-                if (emojiSupport) {
-                    content = msg.content;
+                if (msg.message_type === 'call') {
+                    html += getCallHTML(msg);
                 } else {
-                    content = twemoji.parse(msg.content);
-                }
+                    let content;
 
-                let isSenderClass = 'msgReceiverClass';
-                if (currentUserEmail.trim() === msg.sender.trim()) {
-                    isSenderClass = 'msgSenderClass';
-                }
+                    if (emojiSupport) {
+                        content = msg.content;
+                    } else {
+                        content = twemoji.parse(msg.content);
+                    }
 
-                html += `<div class="${isSenderClass} individualMsgDiv my-1">
-                            <p class="mb-0 rounded-2">${content}</p><br/>
-                            <span class="text-muted timeDetailsDiv" data-timestamp="${msg.str_timestamp}"><sub>${msg.timestamp}</sub></span>
-                        </div>`;
+                    let isSenderClass = 'msgReceiverClass';
+                    if (currentUserEmail.trim() === msg.sender.trim()) {
+                        isSenderClass = 'msgSenderClass';
+                    }
+
+                    html += `<div class="${isSenderClass} individualMsgDiv my-1">
+                                <p class="mb-0 rounded-2">${content}</p><br/>
+                                <span class="text-muted timeDetailsDiv" data-timestamp="${msg.str_timestamp}"><sub>${msg.timestamp}</sub></span>
+                            </div>`;
+                }
             });
 
             $('#chat-messages').prepend(html);
@@ -332,6 +351,10 @@ $(document).ready (() => {
             },
         ]
     };
+    var callConstraints = {
+        'video': true,
+        'audio': true,
+    }
 
     let incomingCallTimeout;
     let outgoingCallTimeout;
@@ -348,16 +371,13 @@ $(document).ready (() => {
     function initiateCall(type) {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             // Define Constraints for getting Media
-            let constraints = {
-                'video': true,
-                'audio': true,
-            }
+
             if (type === 'audio') {
-                constraints['video'] = false;
+                callConstraints['video'] = false;
             }
 
             // Fetch User Media
-            navigator.mediaDevices.getUserMedia(constraints)
+            navigator.mediaDevices.getUserMedia(callConstraints)
             .then(stream => {
                 // Assign Stream to localVideo
                 localVideo.srcObject = stream;
@@ -384,7 +404,7 @@ $(document).ready (() => {
 
                     // Update Frontend
                     let timestamp = new Date().getTime();
-                    localStorage.setItem('outgoingCall', JSON.stringify({ receiver_name, timestamp }));
+                    localStorage.setItem('outgoingCall', JSON.stringify({ receiver_name, chat_id, timestamp }));
                     showOutGoingCall(receiver_name, chat_id, timestamp);
                 })
                 .catch(error => {
@@ -407,11 +427,18 @@ $(document).ready (() => {
         localStorage.setItem('incomingCall', JSON.stringify(data));
 
         // Display the incoming call
-        showIncomingCall(data['caller_name'], data['chat_id'], timestamp);
+        showIncomingCall(data['caller_name'], data['chat_id'], timestamp, data['type']);
     });
 
-    function showIncomingCall(caller_name, chat_id, timestamp) {
+    function showIncomingCall(caller_name, chat_id, timestamp, call_type) {
         $("#incomingCallChatId").val(chat_id);
+        if (call_type === 'audio') {
+            $("#acceptIncomingCallwithVideo").addClass('d-none');
+            $("#acceptIncomingCall").removeClass('d-none');
+        } else {
+            $("#acceptIncomingCallwithVideo").removeClass('d-none');
+            $("#acceptIncomingCall").addClass('d-none');
+        }
         $("#inCallMsg").html('Incoming call from ' + caller_name);
         $("#incomingCallModal").modal('show');
         $("#callingSound")[0].play();
@@ -469,7 +496,18 @@ $(document).ready (() => {
         localStorage.removeItem('outgoingCall');
         let call_chat_id = $("#outgoingCallChatId").val();
         socket.emit('changeCallStatus', {'chat_id': call_chat_id, 'status': 'missed'});
+        socket.emit('cancel-outgoing-call', {'chat_id': call_chat_id, 'caller_email': currentUserEmail});
     });
+
+    socket.on('incomingCallCancelled', function () {
+        $("#inCallMsg").html('Missed Call!');
+        setInterval(function() {
+            // Close the modal after 30 seconds
+            $("#incomingCallModal").modal('hide');
+        }, 2000);
+        localStorage.removeItem('incomingCall');
+        $("#incomingCallChatId").val('');
+    })
 
     $("#acceptIncomingCall").on('click', function(e) {
         answerCall('audio');
@@ -482,7 +520,7 @@ $(document).ready (() => {
     $("#rejectIncomingCall").on('click', function(e) {
         $("#inCallMsg").html('Incoming Call Declined!');
         setInterval(function() {
-            // Close the modal after 30 seconds
+            // Close the modal after 2 seconds
             $("#incomingCallModal").modal('hide');
         }, 2000);
         localStorage.removeItem('incomingCall');
@@ -526,16 +564,13 @@ $(document).ready (() => {
     function createRTCAnswer(offer, call_type) {
         let chat_id = $("#incomingCallChatId").val();
         // Define Constraints for getting Media
-        let constraints = {
-            'video': true,
-            'audio': true
-        }
+
         if (call_type === 'audio') {
-            constraints['video'] = false;
+            callConstraints['video'] = false;
         }
 
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia(constraints)
+            navigator.mediaDevices.getUserMedia(callConstraints)
             .then(async function(stream) {
                 localVideo.srcObject = stream;
 
@@ -562,7 +597,21 @@ $(document).ready (() => {
                         console.error('Error creating answer:', error);
                     });
 
+                if (call_type === 'audio') {
+                    $("#toggleCamera").addClass('d-none');
+                    $("#remoteVideo, #localVideo").addClass('d-none');
+                    $("#remoteVideoPlaceholder, #localVideoPlaceholder").removeClass('d-none');
+                } else {
+                    $("#toggleCamera").removeClass('d-none');
+                    $("#remoteVideo, #localVideo").removeClass('d-none');
+                    $("#remoteVideoPlaceholder, #localVideoPlaceholder").addClass('d-none');
+                }
+                $("#callEndedDiv").addClass('d-none');
+
+                $("#activeCallChatId").val(chat_id);
+
                 $("#activeCallModal").modal('show');
+
             })
             .catch(error => {
                 console.error('Error accessing media devices:', error);
@@ -594,7 +643,21 @@ $(document).ready (() => {
         // Listen for local ICE candidates on the local RTCPeerConnection
         peerConnection.onicecandidate = handleICECandidate;
 
+        if (callConstraints['video'] === false) {
+            $("#toggleCamera").addClass('d-none');
+            $("#remoteVideo, #localVideo").addClass('d-none');
+            $("#remoteVideoPlaceholder, #localVideoPlaceholder").removeClass('d-none');
+        } else {
+            $("#toggleCamera").removeClass('d-none');
+            $("#remoteVideo, #localVideo").removeClass('d-none');
+            $("#remoteVideoPlaceholder, #localVideoPlaceholder").addClass('d-none');
+        }
+        $("#callEndedDiv").addClass('d-none');
+
+        $("#activeCallChatId").val(chat_id);
         $("#activeCallModal").modal('show');
+
+        socket.emit('changeCallStatus', {'chat_id': chat_id, 'status': 'ongoing'})
     });
 
     socket.on('ice_candidate', async function(data) {
@@ -603,6 +666,7 @@ $(document).ready (() => {
                 try {
                     let candidate_to_add = await new RTCIceCandidate(data.candidate)
                     await peerConnection.addIceCandidate(data.candidate);
+                    console.log('added');
                 } catch (e) {
                     console.error('Error adding received ice candidate', e);
                 }
@@ -621,14 +685,84 @@ $(document).ready (() => {
     });
 
     // Toggle Camera
-    $('#toggleCamera').click(function() {
-        const videoTracks = localVideo.srcObject.getVideoTracks();
-        videoTracks.forEach(track => {
-            track.enabled = !track.enabled;
-        });
+    $("#toggleCamera").click(function() {
+        var videoTrack = localVideo.srcObject.getVideoTracks()[0];
+        let cameraStatus = !videoTrack.enabled;
+        videoTrack.enabled = cameraStatus
+        let chat_id = $("#activeCallChatId").val();
+        socket.emit('camera-toggled', {'camera_status': cameraStatus, 'chat_id': chat_id, 'sender_email': currentUserEmail});
         $('#camera_on_svg').toggleClass('d-none');
         $('#camera_off_svg').toggleClass('d-none');
+        $("#localVideo").toggleClass('d-none');
+        $("#localVideoPlaceholder").toggleClass('d-none');
+    })
+
+//    $('#toggleCamera').click(function() {
+//        var videoTracks = localVideo.srcObject.getVideoTracks();
+//        if (videoTracks.length > 0) {
+//            var videoTrack = videoTracks[0];
+//            let cameraStatus = !videoTrack.enabled;
+//            if (cameraStatus === true) {
+//                //Enable camera
+//                startCamera(true)
+//            } else if (cameraStatus === false) {
+//                //Disable Camera
+//                localVideo.srcObject.getTracks().forEach(track => track.stop());
+//                startCamera(false)
+//            }
+//        } else {
+//            startCamera(true);
+//        }
+////        videoTrack.enabled = cameraStatus
+////        let chat_id = $("#activeCallChatId").val();
+////        socket.emit('camera-toggled', {'camera_status': cameraStatus, 'chat_id': chat_id, 'sender_email': currentUserEmail});
+////        $('#camera_on_svg').toggleClass('d-none');
+////        $('#camera_off_svg').toggleClass('d-none');
+////        $("#localVideo").toggleClass('d-none');
+////        $("#localVideoPlaceholder").toggleClass('d-none');
+//    });
+
+//    function startCamera(enableCamera) {
+//        // Get user media with video
+//        navigator.mediaDevices.getUserMedia({ video: enableCamera, audio: true })
+//            .then(stream => {
+//                // Update the local video source with the new stream
+//                localVideo.srcObject = stream;
+//                const sender = peerConnection.getSenders().find(sender => sender.track.kind === 'video');
+//                sender.replaceTrack(newStream.getVideoTracks()[0]);
+//
+//                // Create and set the offer
+//                return peerConnection.createOffer();
+//            })
+//            .catch(error => {
+//                console.error('Error accessing camera:', error);
+//            });
+//        console.log('executing');
+//    }
+
+    socket.on('toggleCamera', function(data) {
+        let received_camera_status = data['camera_status'];
+        if (received_camera_status === true) {
+            $("#remoteVideo").removeClass('d-none');
+            $("#remoteVideoPlaceholder").addClass('d-none');
+        } else if (received_camera_status === false) {
+            $("#remoteVideo").addClass('d-none');
+            $("#remoteVideoPlaceholder").removeClass('d-none');
+        }
     });
+
+    function closeActiveCallModal() {
+        let chat_id = $("#activeCallChatId").val();
+        console.log(chat_id);
+        $("#remoteVideo, #localVideo").addClass('d-none');
+        $("#remoteVideoPlaceholder, #localVideoPlaceholder, #callEndedDiv").removeClass('d-none');
+        setInterval(function() {
+            // Close the modal after 2 seconds
+            $("#activeCallModal").modal('hide');
+        }, 2000);
+        socket.emit('join', { chatId: chat_id });
+        $("#activeCallChatId").val('');
+    }
 
     // Add this inside your document ready or initialization code
     $('#endActiveCall').click(function() {
@@ -636,18 +770,23 @@ $(document).ready (() => {
         peerConnection.close();
         localVideo.srcObject.getTracks().forEach(track => track.stop());
 
-        // Additional cleanup if needed
-
         // Emit a signal to inform the other party about ending the call
-        // let chat_id = /* get your chat_id */;
-        // socket.emit('endCall', { chat_id: chat_id });
+        let chat_id = $("#activeCallChatId").val();
+        socket.emit('endCall', { chat_id: chat_id, 'user_email': currentUserEmail });
+        closeActiveCallModal();
+    });
+
+    socket.on('call_ended', function() {
+        peerConnection.close();
+        localVideo.srcObject.getTracks().forEach(track => track.stop());
+        closeActiveCallModal();
     });
 
     let storedInCall = localStorage.getItem('incomingCall');
     if (storedInCall) {
-        let { caller_name, chat_id, timestamp } = JSON.parse(storedInCall);
+        let { caller_name, chat_id, timestamp, call_type } = JSON.parse(storedInCall);
         if (isRecentCallAttempt(timestamp)) {
-            showIncomingCall(caller_name, chat_id, timestamp);
+            showIncomingCall(caller_name, chat_id, timestamp, call_type);
         } else {
             // More than 30 seconds have passed, clear the item from local storage
             localStorage.removeItem('incomingCall');

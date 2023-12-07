@@ -42,10 +42,6 @@ def handle_join(data):
     if chat_id is None:
         chat_id = ChatGroup.fetch_recent_chat_id(email)
 
-    previous_chat_id = data.get('previousChatId')
-    if previous_chat_id is not None:
-        leave_room(request.sid)
-
     join_room(request.sid)
     print(f'Client joined room: {chat_id}')
 
@@ -153,7 +149,9 @@ def handle_initiate_call(data):
     caller_email = data.get('caller')
     caller = User.fetch_user(caller_email)
     chat_id = data.get('chat_id')
-    call_type = data.get('type')
+    call_type = data.get('type').strip()
+    if call_type != 'audio':
+        call_type = 'video'
     offer = data.get('offer')
     connected_users = ChatGroup.fetch_group_participants(chat_id)
     for user in connected_users:
@@ -166,7 +164,7 @@ def handle_initiate_call(data):
                     'offer': offer
                 }, room=connection.socket_id)
     chat_group = ChatGroup.fetch_group_by_id(chat_id)
-    Message.initiate_call(caller, chat_group, json.dumps(offer))
+    Message.initiate_call(caller, chat_group, call_type, json.dumps(offer))
     print('initiating a call event')
 
 
@@ -193,13 +191,40 @@ def handle_ice_candidate(data):
             socketio.emit('ice_candidate', {'candidate': data.get('candidate')}, room=connection.socket_id)
 
 
+@socketio.on('camera-toggled')
+@login_required
+def handle_toggle_camera(data):
+    """Sends the toggle camera to other user, to update their UI with placeholder"""
+    chat_id = data.get('chat_id')
+    email = data.get('sender_email').strip()
+    camera_status = data.get('camera_status')
+    connected_users = ChatGroup.fetch_group_participants(chat_id)
+    for user in connected_users:
+        if user.email != email:
+            for connection in ConnectedUser.fetch_sockets_for_users(user):
+                socketio.emit('toggleCamera', {'camera_status': camera_status}, room=connection.socket_id)
+
+
+@socketio.on('cancel-outgoing-call')
+@login_required
+def handle_cancel_outgoing_call(data):
+    """Emits the notification of incoming call getting cancelled by the caller"""
+    chat_id = data.get('chat_id')
+    email = data.get('caller_email')
+    connected_users = ChatGroup.fetch_group_participants(chat_id)
+    for user in connected_users:
+        if user.email != email:
+            for connection in ConnectedUser.fetch_sockets_for_users(user):
+                socketio.emit('incomingCallCancelled', room=connection.socket_id)
+
+
 @socketio.on('changeCallStatus')
 @login_required
 def handle_change_call_status(data):
     """Update the status of the call made."""
     chat_id = data.get('chat_id')
     status = data.get('status')
-    if status in ["calling", "declined", "missed", "ongoing", "answered"]:
+    if status in ["calling", "declined", "missed", "ongoing", "ended"]:
         Message.update_call_status(chat_id, status)
     if status == 'declined':
         # Update the frontend of the caller.
@@ -207,3 +232,17 @@ def handle_change_call_status(data):
         caller = call.sender
         for connection in ConnectedUser.fetch_sockets_for_users(caller):
             socketio.emit('callGotRejected', room=connection.socket_id)
+
+
+@socketio.on('endCall')
+@login_required
+def handle_end_call(data):
+    """Handle the call end"""
+    chat_id = data.get('chat_id')
+    Message.update_call_status(chat_id, 'ended')
+    email = data.get('caller_email')
+    connected_users = ChatGroup.fetch_group_participants(chat_id)
+    for user in connected_users:
+        if user.email != email:
+            for connection in ConnectedUser.fetch_sockets_for_users(user):
+                socketio.emit('call_ended', room=connection.socket_id)

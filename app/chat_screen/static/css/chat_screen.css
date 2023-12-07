@@ -219,6 +219,42 @@ emoji-picker {
     width: 100%;
 }
 
+#callEndedDiv p {
+    color: #ccc;
+    margin-top: 24px;
+    font-size: 1.4rem;
+}
+
+.video-placeholder {
+    background-color: #ccc;
+    color: #555;
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+#remoteVideoPlaceholder {
+    width: 40%;
+    margin-top: 40px;
+    background-color: transparent;
+}
+
+#localVideoPlaceholder {
+    width: auto;
+    height: 15%;
+    position: absolute;
+    bottom: 70px;
+    right: 16px;
+    z-index: 10000;
+}
+
+#remoteVideoPlaceholder img {
+    background-color: #ccc;
+    border-radius: 50%;
+    height: 40vh;
+    width: auto;
+}
+
 @media only screen and (max-width: 600px) {
     .small_video {
         width: 20%;

@@ -249,20 +249,39 @@
         </div>
     </div>
 
-    <!-- Video Call Modal -->
+    <!-- Active Call Modal -->
     <div class="modal fade" id="activeCallModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog  modal-fullscreen">
             <div class="modal-content">
                 <div class="modal-body p-0">
+                    <input type="hidden" id="activeCallChatId">
                     <div id="videos">
+                        <!-- Placeholder for remote video -->
+                        <div id="remoteVideoPlaceholder" class="video-placeholder mx-auto d-none">
+                            <img src="{{ url_for('chat_screen_bp.static', filename='images/profile_pic.png') }}">
+                        </div>
+                        <div class="d-none text-center" id="callEndedDiv">
+                            <p>The call has ended</p>
+                        </div>
+
                         <video id="remoteVideo" class="big_video video-item" autoplay playsinline></video>
+
+                        <!-- Placeholder for local video -->
+                        <div id="localVideoPlaceholder" class="video-placeholder mx-auto d-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-camera-video-off px-5 py-4" viewBox="0 0 16 16">
+                                <path d="M10.961 12.365a1.99 1.99 0 0 0 .522-1.103l3.11 1.382A1 1 0 0 0 16 11.731V4.269a1 1 0 0 0-1.406-.913l-3.111 1.382A2 2 0 0 0 9.5 3H4.272l6.69 9.365zm-10.114-9A2.001 2.001 0 0 0 0 5v6a2 2 0 0 0 2 2h5.728L.847 3.366zm9.746 11.925-10-14 .814-.58 10 14-.814.58z"/>
+                            </svg>
+                        </div>
                         <video id="localVideo" class="small_video video-item" autoplay muted playsinline></video>
                     </div>
                     <div id="control-bar-container">
                         <div id="controls-bar" class="d-flex justify-content-around">
-                            <button class="btn btn-danger rounded-circle my-2 px-2 py-1" id="endActiveCall">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-telephone-fill" style="transform: rotate(135deg);" viewBox="0 0 16 16">
-                                    <path fill-rule="evenodd" d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
+                            <button class="btn btn-success rounded-circle my-2 px-2 py-1" id="toggleCamera">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-camera-video-fill" id="camera_on_svg" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M0 5a2 2 0 0 1 2-2h7.5a2 2 0 0 1 1.983 1.738l3.11-1.382A1 1 0 0 1 16 4.269v7.462a1 1 0 0 1-1.406.913l-3.111-1.382A2 2 0 0 1 9.5 13H2a2 2 0 0 1-2-2z"/>
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-camera-video-off-fill d-none" id="camera_off_svg" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M10.961 12.365a1.99 1.99 0 0 0 .522-1.103l3.11 1.382A1 1 0 0 0 16 11.731V4.269a1 1 0 0 0-1.406-.913l-3.111 1.382A2 2 0 0 0 9.5 3H4.272l6.69 9.365zm-10.114-9A2.001 2.001 0 0 0 0 5v6a2 2 0 0 0 2 2h5.728L.847 3.366zm9.746 11.925-10-14 .814-.58 10 14-.814.58"/>
                                 </svg>
                             </button>
                             <button class="btn btn-primary rounded-circle my-2 px-2 py-1" id="ToggleMic">
@@ -275,12 +294,9 @@
                                     <path d="M9.486 10.607 5 6.12V8a3 3 0 0 0 4.486 2.607m-7.84-9.253 12 12 .708-.708-12-12-.708.708z"/>
                                 </svg>
                             </button>
-                            <button class="btn btn-success rounded-circle my-2 px-2 py-1" id="toggleCamera">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-camera-video-fill" id="camera_on_svg" viewBox="0 0 16 16">
-                                    <path fill-rule="evenodd" d="M0 5a2 2 0 0 1 2-2h7.5a2 2 0 0 1 1.983 1.738l3.11-1.382A1 1 0 0 1 16 4.269v7.462a1 1 0 0 1-1.406.913l-3.111-1.382A2 2 0 0 1 9.5 13H2a2 2 0 0 1-2-2z"/>
-                                </svg>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-camera-video-off-fill d-none" id="camera_off_svg" viewBox="0 0 16 16">
-                                    <path fill-rule="evenodd" d="M10.961 12.365a1.99 1.99 0 0 0 .522-1.103l3.11 1.382A1 1 0 0 0 16 11.731V4.269a1 1 0 0 0-1.406-.913l-3.111 1.382A2 2 0 0 0 9.5 3H4.272l6.69 9.365zm-10.114-9A2.001 2.001 0 0 0 0 5v6a2 2 0 0 0 2 2h5.728L.847 3.366zm9.746 11.925-10-14 .814-.58 10 14-.814.58"/>
+                            <button class="btn btn-danger rounded-circle my-2 px-2 py-1" id="endActiveCall">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-telephone-fill" style="transform: rotate(135deg);" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
                                 </svg>
                             </button>
                         </div>

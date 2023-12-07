@@ -136,8 +136,9 @@ class Message(Document):
     timestamp = DateTimeField(default=lambda: datetime.now(pytz.timezone('Asia/Kolkata')))
     read = ListField(ReferenceField(User, reverse_delete_rule=4), default=[])
     message_type = StringField(choices=("text", "call"), default="text")
-    call_status = StringField(choices=("calling", "declined", "missed", "ongoing", "answered"))
-    call_duration = IntField()
+    call_type = StringField(choices=("audio", "video"))
+    call_status = StringField(choices=("calling", "declined", "missed", "ongoing", "ended"))
+    call_duration_seconds = IntField()
 
     meta = {"db_alias": alias, "collection": "message"}
 
@@ -151,9 +152,10 @@ class Message(Document):
 
     @staticmethod
     @reconnect
-    def initiate_call(sender, chat_group, offer):
+    def initiate_call(sender, chat_group, call_type, offer):
         """Save the call details in the chat with message type of call"""
-        Message(sender=sender, chat_group=chat_group, content=offer, message_type='call', call_status='calling').save()
+        Message(sender=sender, chat_group=chat_group, call_type=call_type, content=offer,
+                message_type='call', call_status='calling').save()
 
     @staticmethod
     @reconnect
@@ -161,8 +163,13 @@ class Message(Document):
         """Update the status of the call"""
         chat_group = ChatGroup.fetch_group_by_id(chat_id)
         message = Message.objects(chat_group=chat_group, message_type='call').order_by('-timestamp').first()
-        if status in ("calling", "declined", "missed", "ongoing", "answered"):
+        if status in ("calling", "declined", "missed", "ongoing", "ended"):
             message.call_status = status
+            if status == 'ended':
+                start_time = message.timestamp.replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Asia/Kolkata'))
+                end_time = datetime.now(pytz.timezone('Asia/Kolkata'))
+                total_time = (end_time - start_time).seconds
+                message.call_duration_seconds = total_time
             message.save()
 
     @staticmethod
@@ -203,7 +210,7 @@ class Message(Document):
                 'str_timestamp': str(msg.timestamp),
                 'message_type': msg.message_type,
                 'call_status': msg.call_status,
-                'call_duration': msg.call_duration,
+                'call_duration': msg.call_duration_seconds,
                 'read': user in msg.read
             }
             return_data.append(data)
