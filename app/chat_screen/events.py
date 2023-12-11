@@ -127,8 +127,8 @@ def handle_send_message(data):
 @login_required
 def handle_mark_msg_read(data):
     """Mark message as read for the user"""
-    message_id = data.get('message_id')
-    email = data.get('email')
+    message_id = data.get('message_id').strip()
+    email = data.get('email').strip()
     if message_id and email:
         Message.mark_message_read(message_id, email)
 
@@ -136,8 +136,8 @@ def handle_mark_msg_read(data):
 @socketio.on('refresh-chat-list')
 @login_required
 def refresh_chat_list(data):
-    email = data.get('email')
-    chat_id = data.get('chat_id')
+    email = data.get('email').strip()
+    chat_id = data.get('chat_id').strip()
 
     # Emit the 'chatList' event to the specific socket ID
     socketio.emit('chatList', {'chatList': get_chat_list(email), 'chatId': str(chat_id), 'source': 'refresh_chat_list'},
@@ -150,10 +150,11 @@ def refresh_chat_list(data):
 @login_required
 def handle_initiate_call(data):
     """Initiating a call event"""
-    caller_email = data.get('caller')
+    caller_email = data.get('caller').strip()
     caller = User.fetch_user(caller_email)
     chat_id = data.get('chat_id')
     call_type = data.get('type').strip()
+    action = data.get('call_type').strip()
     if call_type != 'audio':
         call_type = 'video'
     offer = data.get('offer')
@@ -161,15 +162,24 @@ def handle_initiate_call(data):
     for user in connected_users:
         if user.email != caller_email:
             for connection in ConnectedUser.fetch_sockets_for_users(user):
-                socketio.emit('incomingCall', {
-                    'type': call_type,
-                    'caller_name': f'{caller.first_name} {caller.last_name}',
-                    'chat_id': chat_id,
-                    'offer': offer
-                }, room=connection.socket_id)
-    chat_group = ChatGroup.fetch_group_by_id(chat_id)
-    Message.initiate_call(caller, chat_group, call_type, json.dumps(offer))
-    print('initiating a call event')
+                if action != 'renegotiate':
+                    socketio.emit('incomingCall', {
+                        'type': call_type,
+                        'caller_name': f'{caller.first_name} {caller.last_name}',
+                        'chat_id': chat_id,
+                        'offer': offer
+                    }, room=connection.socket_id)
+                else:
+                    socketio.emit('acceptNegotiation', {
+                        'type': call_type,
+                        'caller_name': f'{caller.first_name} {caller.last_name}',
+                        'chat_id': chat_id,
+                        'offer': offer
+                    }, room=connection.socket_id)
+    if action != 'renegotiate':
+        chat_group = ChatGroup.fetch_group_by_id(chat_id)
+        Message.initiate_call(caller, chat_group, call_type, json.dumps(offer))
+        print('initiating a call event')
 
 
 @socketio.on('answer-call')
@@ -177,7 +187,15 @@ def handle_initiate_call(data):
 def handle_call_answered_by_callee(data):
     """Handle Call Answered. Emit the answer back to caller"""
     chat_id = data.get('chat_id')
-    Message.update_call_status(chat_id, 'ongoing')
+    action = data.get('action')
+    chat_group = ChatGroup.fetch_group_by_id(chat_id)
+    callee = ''
+    for user in chat_group.participants:
+        if user.email != session['email']:
+            callee = f'{user.first_name} {user.last_name}'
+    data['other_user'] = callee
+    if action != 'renegotiate':
+        Message.update_call_status(chat_id, 'ongoing')
     call = Message.fetch_last_call_in_chat(chat_id)
     caller = call.sender
     for connection in ConnectedUser.fetch_sockets_for_users(caller):
@@ -200,7 +218,7 @@ def handle_ice_candidate(data):
 def handle_toggle_camera(data):
     """Sends the toggle camera to other user, to update their UI with placeholder"""
     chat_id = data.get('chat_id')
-    email = data.get('sender_email').strip()
+    email = data.get('sender_email')
     camera_status = data.get('camera_status')
     connected_users = ChatGroup.fetch_group_participants(chat_id)
     for user in connected_users:
@@ -228,7 +246,7 @@ def handle_change_call_status(data):
     """Update the status of the call made."""
     chat_id = data.get('chat_id')
     status = data.get('status')
-    if status in ["calling", "declined", "missed", "ongoing", "ended"]:
+    if status in ["calling", "declined", "missed", "ongoing", "ended", "crashed"]:
         Message.update_call_status(chat_id, status)
     if status == 'declined':
         # Update the frontend of the caller.

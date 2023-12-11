@@ -67,7 +67,7 @@ $(document).ready (() => {
 
     function calculateTimeDuration(seconds) {
 
-        if (!Number.isInteger(seconds) || seconds % 1 !== 0) {
+        if ((!Number.isInteger(seconds) )|| (seconds % 1 !== 0) || (seconds == 0)) {
             return "";
         }
         var hours = Math.floor(seconds / 3600);
@@ -90,20 +90,22 @@ $(document).ready (() => {
         return durationStr;
     }
 
-    function getCallHTML(msg) {
+    function getCallHTML(msg, isRecentCall) {
 
         let call_text = '';
         let duration_text = '';
         let svg_fill = '#3C717D';
 
         if (msg.call_status === 'calling') {
-            call_text = 'Ongoing Call';
+            call_text = 'Calling';
         } else if (msg.call_status === 'declined') {
             call_text = 'Call Declined';
         } else if (msg.call_status === 'missed') {
             call_text = 'Missed Call';
-        } else if (msg.call_status === 'ongoing') {
+        } else if ((msg.call_status === 'ongoing') && (isRecentCall === true)) {
             call_text = 'Ongoing Call';
+        } else if (msg.call_status === 'ongoing') {
+            call_text = 'Call Ended';
         } else if (msg.call_status === 'ended') {
             call_text = 'Call Ended';
             duration_text = calculateTimeDuration(+msg.call_duration);
@@ -152,12 +154,14 @@ $(document).ready (() => {
             // Messages present
             let unreadMsgStart = false;
             let unreadMsgReached = false;
+            let isRecentCall = true
 
             let html = '';
             messages.forEach(function (msg) {
 
                 if (msg.message_type === 'call') {
-                    html += getCallHTML(msg);
+                    html += getCallHTML(msg, isRecentCall);
+                    isRecentCall = false;
                 } else {
                     let content = '';
 
@@ -210,7 +214,7 @@ $(document).ready (() => {
             let html = '';
             messages.forEach(function (msg) {
                 if (msg.message_type === 'call') {
-                    html += getCallHTML(msg);
+                    html += getCallHTML(msg, 'false');
                 } else {
                     let content;
 
@@ -246,7 +250,7 @@ $(document).ready (() => {
         var messageContent = $('#message-input').val();
 
         if (messageContent.trim() !== '') {
-            let chatGroupId = $("#activeChatId").val();
+            var chatGroupId = $("#activeChatId").val();
 
             var data = {
                 chat_id: chatGroupId,
@@ -313,7 +317,7 @@ $(document).ready (() => {
     });
 
     socket.on('chatList', function (data) {
-        let chatId = '';
+        var chatId = '';
         updateChatList(data.chatList);
         if ((data.chatId !== null) && (data.source === 'join')) {
             chatId = data.chatId;
@@ -340,7 +344,7 @@ $(document).ready (() => {
     // Join the Chat
     $(document).on('click', '#chat-list li', function(e){
         e.preventDefault();
-        let chatId = $(this).attr('data-chatId');
+        var chatId = $(this).attr('data-chatId');
         let previousChatId = $("#activeChatId").val();
         morePageAvailable = true;
         socket.emit('join', { chatId: chatId, previousChatId: previousChatId });
@@ -361,20 +365,15 @@ $(document).ready (() => {
     // Fetch more messages when scrolling to the top
     $('#chat-messages').on('scroll', function () {
         if (($(this).scrollTop() === 0) && (morePageAvailable === true)) {
-            let chat_id = $("#activeChatId").val();
+            var chat_id = $("#activeChatId").val();
             let oldest_msg_time = $("#chat-messages .timeDetailsDiv:first").data('timestamp');
             socket.emit('fetch-more-messages', { chatId: chat_id, oldest_msg_time: oldest_msg_time });
         }
     });
 
-    // Socket Disconnect
-    $(window).on('beforeunload', function() {
-        socket.disconnect();
-    });
-
     // Reload Chat List every 2 minutes, to refresh the active status of the chat
     setInterval(function () {
-        let chat_id = $("#activeChatId").val();
+        var chat_id = $("#activeChatId").val();
         socket.emit('refresh-chat-list', { email: currentUserEmail, chat_id: chat_id });
     }, 120000);
 
@@ -383,7 +382,7 @@ $(document).ready (() => {
 
     var localVideo = document.getElementById('localVideo');
     var remoteVideo = document.getElementById('remoteVideo');
-    var peerConnection;
+    var peerConnection = undefined;
     var RTCConfiguration = {
         iceServers: [
             {
@@ -402,17 +401,29 @@ $(document).ready (() => {
 
     let incomingCallTimeout;
     let outgoingCallTimeout;
+    let callingTone = document.getElementById("callingSound");
 
+    function playRingTone() {
+        callingTone.play();
+    }
+
+    function stopRingTone() {
+        callingTone.pause();
+        callingTone.currentTime = 0;
+    }
 
     $('#startAudioCall').click(function() {
-        initiateCall('audio');
+        initiateCall('audio', 'new');
     });
 
     $('#startVideoCall').click(function() {
-        initiateCall('video');
+        initiateCall('video', 'new');
     });
 
-    function initiateCall(type) {
+    function initiateCall(type, call_type, isMicEnabled=true) {
+        if (call_type === 'renegotiate') {
+            peerConnection.removeStream(localVideo.srcObject);
+        }
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             // Define Constraints for getting Media
 
@@ -427,14 +438,25 @@ $(document).ready (() => {
                 localVideo.srcObject = stream;
 
                 // Establishing Peer Connection
-                peerConnection = new RTCPeerConnection(RTCConfiguration);
+                if (call_type !== 'renegotiate') {
+                    peerConnection = new RTCPeerConnection(RTCConfiguration);
+                }
 
                 stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
 
-                peerConnection.addEventListener('track', async (event) => {
-                    const [remoteStream] = event.streams;
-                    remoteVideo.srcObject = remoteStream;
-                });
+                if (call_type !== 'renegotiate') {
+                    peerConnection.addEventListener('track', async (event) => {
+                        const [remoteStream] = event.streams;
+                        remoteVideo.srcObject = remoteStream;
+                    });
+                }
+
+                if (isMicEnabled === false) {
+                    var audioTracks = localVideo.srcObject.getAudioTracks();
+                    audioTracks.forEach(track => {
+                        track.enabled = !track.enabled;
+                    });
+                }
 
                 // Create Offer
                 peerConnection.createOffer()
@@ -442,18 +464,29 @@ $(document).ready (() => {
                 .then(offer => peerConnection.setLocalDescription(offer))
                 .then(() => {
                     // Send Offer Via Emit
-                    let chat_id = $("#activeChatId").val();
-                    let receiver_name = $(".active_chat .group_name").text();
-                    socket.emit('initiateCall', { type, chat_id: chat_id, caller: currentUserEmail, offer: peerConnection.localDescription });
+                    var chat_id;
+                    let receiver_name;
+                    if (call_type === 'reconnect') {
+                        chat_id = $("#crashedCallChatId").val();
+                        receiver_name = $("#crashedCallOtherUser").val();
+                    } else {
+                        chat_id = $("#activeChatId").val();
+                        receiver_name = $(".active_chat .group_name").text();
+                    }
 
-                    // Update Frontend
-                    let timestamp = new Date().getTime();
-                    localStorage.setItem('outgoingCall', JSON.stringify({ receiver_name, chat_id, timestamp }));
-                    showOutGoingCall(receiver_name, chat_id, timestamp);
+                    socket.emit('initiateCall', { type, call_type, chat_id: chat_id, caller: currentUserEmail, offer: peerConnection.localDescription });
+
+                    if (call_type !== 'renegotiate') {
+                        // Update Frontend
+                        let timestamp = new Date().getTime();
+                        localStorage.setItem('outgoingCall', JSON.stringify({ receiver_name, chat_id, timestamp, type }));
+                        showOutGoingCall(receiver_name, chat_id, timestamp, type);
+                    }
                 })
                 .catch(error => {
                     console.log('Error creating offer:', error);
                 });
+
             })
             .catch(error => {
                 console.log('Error accessing media devices.', error);
@@ -467,7 +500,7 @@ $(document).ready (() => {
     socket.on('incomingCall', function(data) {
         // Store the incoming call details in local storage
         let timestamp = new Date().getTime();
-        data['timestamp'] = timestamp
+        data['timestamp'] = timestamp;
         localStorage.setItem('incomingCall', JSON.stringify(data));
 
         // Display the incoming call
@@ -476,16 +509,19 @@ $(document).ready (() => {
 
     function showIncomingCall(caller_name, chat_id, timestamp, call_type) {
         $("#incomingCallChatId").val(chat_id);
-        if (call_type === 'audio') {
-            $("#acceptIncomingCallwithVideo").addClass('d-none');
-            $("#acceptIncomingCall").removeClass('d-none');
-        } else {
-            $("#acceptIncomingCallwithVideo").removeClass('d-none');
-            $("#acceptIncomingCall").addClass('d-none');
-        }
         $("#inCallMsg").html('Incoming call from ' + caller_name);
         $("#incomingCallModal").modal('show');
-        $("#callingSound")[0].play();
+        playRingTone();
+
+        // Update UI for received call type
+        if (call_type === 'audio') {
+            $("#remoteVideoPlaceholder").removeClass('d-none');
+            $("#remoteVideo").addClass('d-none');
+        } else {
+            $("#remoteVideoPlaceholder").addClass('d-none');
+            $("#remoteVideo").removeClass('d-none');
+        }
+        $("#callEndedDiv").addClass('d-none');
 
         let now = new Date().getTime();
         let remainingTime = Math.max(0, 30000 - (now - timestamp));
@@ -503,11 +539,24 @@ $(document).ready (() => {
         }, remainingTime);
     }
 
-    function showOutGoingCall(receiver_name, chat_id, timestamp) {
+    function showOutGoingCall(receiver_name, chat_id, timestamp, call_type) {
         $("#outgoingCallChatId").val(chat_id);
         $("#outCallMsg").html('Calling ' + receiver_name);
         $("#outgoingCallModal").modal('show');
-        $("#callingSound")[0].play();
+        playRingTone();
+
+        if (call_type === 'audio') {
+            $("#camera_on_svg").addClass("d-none");
+            $("#camera_off_svg").removeClass("d-none");
+            $("#localVideoPlaceholder").removeClass('d-none');
+            $("#localVideo").addClass('d-none');
+        } else {
+            $("#camera_on_svg").removeClass("d-none");
+            $("#camera_off_svg").addClass("d-none");
+            $("#localVideoPlaceholder").addClass('d-none');
+            $("#localVideo").removeClass('d-none');
+        }
+        $("#callEndedDiv").addClass('d-none');
 
         let now = new Date().getTime();
         let remainingTime = Math.max(0, 30000 - (now - timestamp));
@@ -521,6 +570,7 @@ $(document).ready (() => {
                 $("#outgoingCallModal").modal('hide');
                 // Change Call Status
                 socket.emit('changeCallStatus', {'chat_id': chat_id, 'status': 'missed'});
+                closePeerConnection();
             }, 2000);
         }, remainingTime);
         localStorage.removeItem('incomingCall');
@@ -532,6 +582,8 @@ $(document).ready (() => {
     }
 
     $("#cancelOutgoingCall").on('click', function(e) {
+        stopRingTone();
+        clearTimeout(outgoingCallTimeout);
         $("#outCallMsg").html('Outgoing Call Canceled!');
         setInterval(function() {
             // Close the modal after 30 seconds
@@ -541,27 +593,47 @@ $(document).ready (() => {
         let call_chat_id = $("#outgoingCallChatId").val();
         socket.emit('changeCallStatus', {'chat_id': call_chat_id, 'status': 'missed'});
         socket.emit('cancel-outgoing-call', {'chat_id': call_chat_id, 'caller_email': currentUserEmail});
+        closePeerConnection();
+        socket.emit('join', { chatId: call_chat_id });
+        $("#outgoingCallChatId").val('');
     });
 
     socket.on('incomingCallCancelled', function () {
+        stopRingTone();
         $("#inCallMsg").html('Missed Call!');
         setInterval(function() {
             // Close the modal after 30 seconds
             $("#incomingCallModal").modal('hide');
         }, 2000);
         localStorage.removeItem('incomingCall');
+        let call_chat_id = $("#incomingCallChatId").val();
+        let active_chat_id = $("#activeChatId").val();
+        if (call_chat_id === active_chat_id) {
+            socket.emit('join', { chatId: call_chat_id });
+        }
         $("#incomingCallChatId").val('');
     })
 
     $("#acceptIncomingCall").on('click', function(e) {
+        stopRingTone();
         answerCall('audio');
+        $("#camera_on_svg").addClass("d-none");
+        $("#camera_off_svg").removeClass("d-none");
+        $("#localVideo").addClass("d-none");
+        $("#localVideoPlaceholder").removeClass("d-none");
     });
 
     $("#acceptIncomingCallwithVideo").on('click', function(e) {
+        stopRingTone();
         answerCall('video');
+        $("#camera_on_svg").removeClass("d-none");
+        $("#camera_off_svg").addClass("d-none");
+        $("#localVideo").removeClass("d-none");
+        $("#localVideoPlaceholder").addClass("d-none");
     });
 
     $("#rejectIncomingCall").on('click', function(e) {
+        stopRingTone();
         $("#inCallMsg").html('Incoming Call Declined!');
         setInterval(function() {
             // Close the modal after 2 seconds
@@ -569,24 +641,35 @@ $(document).ready (() => {
         }, 2000);
         localStorage.removeItem('incomingCall');
         let call_chat_id = $("#incomingCallChatId").val();
+        let active_chat_id = $("#activeChatId").val();
         socket.emit('changeCallStatus', {'chat_id': call_chat_id, 'status': 'declined'});
+        if (call_chat_id === active_chat_id) {
+            socket.emit('join', { chatId: call_chat_id });
+        }
+        $("#incomingCallChatId").val('');
     });
 
     socket.on('callGotRejected', function() {
+        stopRingTone();
+        clearTimeout(outgoingCallTimeout);
+        closePeerConnection();
         $("#outCallMsg").html('The call was declined!');
         setInterval(function() {
             // Close the modal after 30 seconds
             $("#outgoingCallModal").modal('hide');
         }, 2000);
         localStorage.removeItem('outgoingCall');
-    })
+        let call_chat_id = $("#outgoingCallChatId").val();
+        socket.emit('join', { chatId: call_chat_id });
+        $("#outgoingCallChatId").val('');
+    });
 
     function answerCall(call_type) {
         clearTimeout(incomingCallTimeout);
         localStorage.removeItem('incomingCall');
         $("#incomingCallModal").modal('hide');
 
-        let chat_id = $("#incomingCallChatId").val();
+        var chat_id = $("#incomingCallChatId").val();
 
         $.ajax({
             'url': '/chat/audio_video_call/rtc_offers/get_offer/',
@@ -596,7 +679,7 @@ $(document).ready (() => {
             },
             'success': function(response) {
                 if (response['status'] === 'success') {
-                    createRTCAnswer(response['offer'], call_type);
+                    createRTCAnswer(response['offer'], call_type, response['other_user'], 'reply');
                 }
             },
             'error': function(xhr) {
@@ -605,8 +688,25 @@ $(document).ready (() => {
         });
     }
 
-    function createRTCAnswer(offer, call_type) {
-        let chat_id = $("#incomingCallChatId").val();
+    socket.on('acceptNegotiation', function (data) {
+        let offer = data['offer'];
+        let call_type = 'video';
+
+        if (callConstraints['video'] === false) {
+            call_type = 'audio';
+        }
+
+        let other_user = data['caller_name'];
+
+        var audioTrack = localVideo.srcObject.getAudioTracks()[0];
+        var isMicEnabled = audioTrack.enabled;
+
+        createRTCAnswer(offer, call_type, other_user, 'renegotiate', isMicEnabled);
+    });
+
+    function createRTCAnswer(offer, call_type, caller, action, isMicEnabled=true) {
+
+        var chat_id = $("#incomingCallChatId").val();
         // Define Constraints for getting Media
 
         if (call_type === 'audio') {
@@ -618,44 +718,47 @@ $(document).ready (() => {
             .then(async function(stream) {
                 localVideo.srcObject = stream;
 
-                peerConnection = new RTCPeerConnection(RTCConfiguration);
+                if (action !== 'renegotiate') {
+                    peerConnection = new RTCPeerConnection(RTCConfiguration);
+                }
 
                 stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
 
-                peerConnection.addEventListener('track', async (event) => {
-                    const [remoteStream] = event.streams;
-                    remoteVideo.srcObject = remoteStream;
-                });
+                if (action !== 'renegotiate') {
+                    peerConnection.addEventListener('track', async (event) => {
+                        const [remoteStream] = event.streams;
+                        remoteVideo.srcObject = remoteStream;
+                    });
+                }
+
+                if (isMicEnabled === false) {
+                    var audioTracks = localVideo.srcObject.getAudioTracks();
+                    audioTracks.forEach(track => {
+                        track.enabled = !track.enabled;
+                    });
+                }
 
                 var remoteDescription = await new RTCSessionDescription(offer);
                 await peerConnection.setRemoteDescription(remoteDescription);
 
-                peerConnection.onicecandidate = handleICECandidate;
+                if (action !== 'renegotiate') {
+                    peerConnection.onicecandidate = handleICECandidate;
+                }
 
                 peerConnection.createAnswer()
                     .then(answer => peerConnection.setLocalDescription(answer))
                     .then(() => {
-                        socket.emit('answer-call', { answer: peerConnection.localDescription, chat_id: chat_id });
+                        socket.emit('answer-call', { answer: peerConnection.localDescription, chat_id: chat_id, action: action, call_answer_type: call_type });
                     })
                     .catch(error => {
                         console.error('Error creating answer:', error);
                     });
 
-                if (call_type === 'audio') {
-                    $("#toggleCamera").addClass('d-none');
-                    $("#remoteVideo, #localVideo").addClass('d-none');
-                    $("#remoteVideoPlaceholder, #localVideoPlaceholder").removeClass('d-none');
-                } else {
-                    $("#toggleCamera").removeClass('d-none');
-                    $("#remoteVideo, #localVideo").removeClass('d-none');
-                    $("#remoteVideoPlaceholder, #localVideoPlaceholder").addClass('d-none');
+                if (action !== 'renegotiate') {
+                    $("#activeCallChatId").val(chat_id);
+                    $("#activeCallModal").modal('show');
+                    localStorage.setItem('activeCall', JSON.stringify({ chat_id, other_user: caller }));
                 }
-                $("#callEndedDiv").addClass('d-none');
-
-                $("#activeCallChatId").val(chat_id);
-
-                $("#activeCallModal").modal('show');
-
             })
             .catch(error => {
                 console.error('Error accessing media devices:', error);
@@ -667,7 +770,7 @@ $(document).ready (() => {
     }
 
     function handleICECandidate(event) {
-        let chat_id = $("#incomingCallChatId").val();
+        var chat_id = $("#incomingCallChatId").val();
         if (event.candidate) {
             socket.emit('newIceCandidate', {'candidate': event.candidate, 'chat_id': chat_id, 'email': currentUserEmail});
         }
@@ -675,33 +778,35 @@ $(document).ready (() => {
 
     socket.on('callGotAnswered', async function(data) {
 
+        stopRingTone();
         clearTimeout(outgoingCallTimeout);
         localStorage.removeItem('outgoingCall');
         $("#outgoingCallModal").modal('hide');
 
-        let chat_id = $("#outgoingCallChatId").val();
+        var chat_id = $("#outgoingCallChatId").val();
+        let action = data['action'];
 
         var RTCAnswer = await new RTCSessionDescription(data.answer);
         await peerConnection.setRemoteDescription(RTCAnswer);
 
-        // Listen for local ICE candidates on the local RTCPeerConnection
-        peerConnection.onicecandidate = handleICECandidate;
+        if (action !== 'renegotiate') {
+            // Listen for local ICE candidates on the local RTCPeerConnection
+            peerConnection.onicecandidate = handleICECandidate;
 
-        if (callConstraints['video'] === false) {
-            $("#toggleCamera").addClass('d-none');
-            $("#remoteVideo, #localVideo").addClass('d-none');
-            $("#remoteVideoPlaceholder, #localVideoPlaceholder").removeClass('d-none');
-        } else {
-            $("#toggleCamera").removeClass('d-none');
-            $("#remoteVideo, #localVideo").removeClass('d-none');
-            $("#remoteVideoPlaceholder, #localVideoPlaceholder").addClass('d-none');
+            // Check Remote Call Type
+            if (data['call_answer_type'] === 'audio') {
+                $("#remoteVideoPlaceholder").removeClass('d-none');
+                $("#remoteVideo").addClass('d-none');
+            } else {
+                $("#remoteVideoPlaceholder").addClass('d-none');
+                $("#remoteVideo").removeClass('d-none');
+            }
+
+            $("#activeCallChatId").val(chat_id);
+            $("#activeCallModal").modal('show');
+            socket.emit('changeCallStatus', {'chat_id': chat_id, 'status': 'ongoing'});
+            localStorage.setItem('activeCall', JSON.stringify({ chat_id, other_user: data['other_user'] }));
         }
-        $("#callEndedDiv").addClass('d-none');
-
-        $("#activeCallChatId").val(chat_id);
-        $("#activeCallModal").modal('show');
-
-        socket.emit('changeCallStatus', {'chat_id': chat_id, 'status': 'ongoing'})
     });
 
     socket.on('ice_candidate', async function(data) {
@@ -718,6 +823,19 @@ $(document).ready (() => {
         }
     });
 
+    function closePeerConnection () {
+        if (peerConnection !== undefined) {
+            peerConnection.close();
+            peerConnection = undefined;
+        }
+        if (localVideo) {
+            if ((localVideo.srcObject.getTracks()).length > 0) {
+                localVideo.srcObject.getTracks().forEach(track => track.stop());
+            }
+            localVideo.srcObject = null;
+        }
+    }
+
     // Toggle Mic
     $('#ToggleMic').click(function() {
         var audioTracks = localVideo.srcObject.getAudioTracks();
@@ -729,60 +847,48 @@ $(document).ready (() => {
     });
 
     // Toggle Camera
-    $("#toggleCamera").click(function() {
-        var videoTrack = localVideo.srcObject.getVideoTracks()[0];
-        let cameraStatus = !videoTrack.enabled;
-        videoTrack.enabled = cameraStatus
-        let chat_id = $("#activeCallChatId").val();
-        socket.emit('camera-toggled', {'camera_status': cameraStatus, 'chat_id': chat_id, 'sender_email': currentUserEmail});
-        $('#camera_on_svg').toggleClass('d-none');
-        $('#camera_off_svg').toggleClass('d-none');
-        $("#localVideo").toggleClass('d-none');
-        $("#localVideoPlaceholder").toggleClass('d-none');
-    })
+    $('#toggleCamera').click(function() {
+        var turnCameraActive;
+        var videoTracks = localVideo.srcObject.getVideoTracks();
+        if (videoTracks.length > 0) {
+            var videoTrack = videoTracks[0];
+            let cameraReadyState = videoTrack.readyState;
+            if (cameraReadyState === 'live') {
+                turnCameraActive = false;
+            } else if (cameraReadyState === 'ended') {
+                turnCameraActive = true;
+            }
+            if (turnCameraActive === true) {
+                // Enable camera
+                startCamera(true);
+            } else if (turnCameraActive === false) {
+                // Disable Camera
+                localVideo.srcObject.getVideoTracks().forEach(track => track.stop());
+                startCamera(false);
+            }
+        } else {
+            // Camera is Disabled, enabling the camera
+            turnCameraActive = true;
+            startCamera(true);
+        }
+        var chat_id = $("#activeCallChatId").val();
+        socket.emit('camera-toggled', {'camera_status': turnCameraActive, 'chat_id': chat_id, 'sender_email': currentUserEmail});
+        $('#camera_on_svg, #camera_off_svg, #localVideo, #localVideoPlaceholder').toggleClass('d-none');
+    });
 
-//    $('#toggleCamera').click(function() {
-//        var videoTracks = localVideo.srcObject.getVideoTracks();
-//        if (videoTracks.length > 0) {
-//            var videoTrack = videoTracks[0];
-//            let cameraStatus = !videoTrack.enabled;
-//            if (cameraStatus === true) {
-//                //Enable camera
-//                startCamera(true)
-//            } else if (cameraStatus === false) {
-//                //Disable Camera
-//                localVideo.srcObject.getTracks().forEach(track => track.stop());
-//                startCamera(false)
-//            }
-//        } else {
-//            startCamera(true);
-//        }
-////        videoTrack.enabled = cameraStatus
-////        let chat_id = $("#activeCallChatId").val();
-////        socket.emit('camera-toggled', {'camera_status': cameraStatus, 'chat_id': chat_id, 'sender_email': currentUserEmail});
-////        $('#camera_on_svg').toggleClass('d-none');
-////        $('#camera_off_svg').toggleClass('d-none');
-////        $("#localVideo").toggleClass('d-none');
-////        $("#localVideoPlaceholder").toggleClass('d-none');
-//    });
-
-//    function startCamera(enableCamera) {
-//        // Get user media with video
-//        navigator.mediaDevices.getUserMedia({ video: enableCamera, audio: true })
-//            .then(stream => {
-//                // Update the local video source with the new stream
-//                localVideo.srcObject = stream;
-//                const sender = peerConnection.getSenders().find(sender => sender.track.kind === 'video');
-//                sender.replaceTrack(newStream.getVideoTracks()[0]);
-//
-//                // Create and set the offer
-//                return peerConnection.createOffer();
-//            })
-//            .catch(error => {
-//                console.error('Error accessing camera:', error);
-//            });
-//        console.log('executing');
-//    }
+    function startCamera(turnCameraActive) {
+        var call_mode;
+        var audioTrack = localVideo.srcObject.getAudioTracks()[0];
+        var isMicEnabled = audioTrack.enabled;
+        if (turnCameraActive === true) {
+            call_mode = 'video';
+            callConstraints['video'] = true
+            initiateCall(call_mode, 'renegotiate', isMicEnabled);
+        } else if (turnCameraActive === false) {
+            call_mode = 'audio';
+            callConstraints['video'] = false
+        }
+    }
 
     socket.on('toggleCamera', function(data) {
         let received_camera_status = data['camera_status'];
@@ -796,10 +902,10 @@ $(document).ready (() => {
     });
 
     function closeActiveCallModal() {
-        let chat_id = $("#activeCallChatId").val();
-        console.log(chat_id);
+        var chat_id = $("#activeCallChatId").val();
         $("#remoteVideo, #localVideo").addClass('d-none');
-        $("#remoteVideoPlaceholder, #localVideoPlaceholder, #callEndedDiv").removeClass('d-none');
+        $("#callEndedDiv").removeClass('d-none');
+        $("#remoteVideoPlaceholder, #localVideoPlaceholder").removeClass('d-none');
         setInterval(function() {
             // Close the modal after 2 seconds
             $("#activeCallModal").modal('hide');
@@ -811,19 +917,50 @@ $(document).ready (() => {
     // Add this inside your document ready or initialization code
     $('#endActiveCall').click(function() {
         // Close the connection and stop local media
-        peerConnection.close();
-        localVideo.srcObject.getTracks().forEach(track => track.stop());
+        closePeerConnection();
 
         // Emit a signal to inform the other party about ending the call
-        let chat_id = $("#activeCallChatId").val();
+        var chat_id = $("#activeCallChatId").val();
+
         socket.emit('endCall', { chat_id: chat_id, 'user_email': currentUserEmail });
         closeActiveCallModal();
+        localStorage.removeItem('activeCall');
     });
 
     socket.on('call_ended', function() {
-        peerConnection.close();
-        localVideo.srcObject.getTracks().forEach(track => track.stop());
+        closePeerConnection();
         closeActiveCallModal();
+        localStorage.removeItem('activeCall');
+    });
+
+    // Check any last active Calls that were made before browser closed
+    let activeOngoingCall = localStorage.getItem('activeCall');
+    if (activeOngoingCall) {
+        localStorage.removeItem('incomingCall');
+        localStorage.removeItem('outgoingCall');
+        let { chat_id, other_user} = JSON.parse(activeOngoingCall);
+        $("#crashedCallMsg").text('The Call with '+other_user+' did not end properly.');
+        $("#crashedCallChatId").val(chat_id);
+        $("#crashedCallOtherUser").val(other_user);
+        $("#crashedCallModal").modal('show');
+        socket.emit('changeCallStatus', {'chat_id': chat_id, 'status': 'crashed'});
+    }
+
+    $("#reconnectCrashedCall").on('click', function() {
+        initiateCall('audio', 'reconnect');
+        localStorage.removeItem('activeCall');
+        $("#crashedCallModal").modal('hide');
+    });
+
+    $("#reconnectCrashedCallwithVideo").on('click', function() {
+        initiateCall('video', 'reconnect');
+        localStorage.removeItem('activeCall');
+        $("#crashedCallModal").modal('hide');
+    });
+
+    $("#cancelCrashedCall").on('click', function() {
+        localStorage.removeItem('activeCall');
+        $("#crashedCallModal").modal('hide');
     });
 
     let storedInCall = localStorage.getItem('incomingCall');
@@ -839,12 +976,19 @@ $(document).ready (() => {
 
     let storedOutCall = localStorage.getItem('outgoingCall');
     if (storedOutCall) {
-        let { receiver_name, chat_id, timestamp } = JSON.parse(storedOutCall);
+        let { receiver_name, chat_id, timestamp, type } = JSON.parse(storedOutCall);
         if (isRecentCallAttempt(timestamp)) {
-            showOutGoingCall(receiver_name, chat_id, timestamp);
+            showOutGoingCall(receiver_name, chat_id, timestamp, type);
         } else {
             // More than 30 seconds have passed, clear the item from local storage
             localStorage.removeItem('outgoingCall');
         }
     }
+
+    // Socket Disconnect
+    $(window).on('beforeunload', function() {
+        socket.disconnect();
+        closePeerConnection();
+    });
+
 });

@@ -163,8 +163,11 @@ class Message(Document):
         """Update the status of the call"""
         chat_group = ChatGroup.fetch_group_by_id(chat_id)
         message = Message.objects(chat_group=chat_group, message_type='call').order_by('-timestamp').first()
-        if status in ("calling", "declined", "missed", "ongoing", "ended"):
-            message.call_status = status
+        if status in ("calling", "declined", "missed", "ongoing", "ended", "crashed"):
+            if status == 'crashed':
+                message.call_status = 'ended'
+            else:
+                message.call_status = status
             if status == 'ended':
                 start_time = message.timestamp.replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Asia/Kolkata'))
                 end_time = datetime.now(pytz.timezone('Asia/Kolkata'))
