@@ -182,6 +182,19 @@ def handle_initiate_call(data):
         print('initiating a call event')
 
 
+@socketio.on('phone-line-busy')
+@login_required
+def handle_phone_line_busy(data):
+    """Handle the phone line of callee being busy"""
+    chat_id = data.get('chat_id')
+    email = data.get('user_email')
+    connected_users = ChatGroup.fetch_group_participants(chat_id)
+    for user in connected_users:
+        if user.email != email:
+            for connection in ConnectedUser.fetch_sockets_for_users(user):
+                socketio.emit('phoneLineBusy', room=connection.socket_id)
+
+
 @socketio.on('answer-call')
 @login_required
 def handle_call_answered_by_callee(data):

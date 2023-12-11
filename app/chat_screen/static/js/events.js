@@ -412,12 +412,62 @@ $(document).ready (() => {
         callingTone.currentTime = 0;
     }
 
+    function isCallPossible() {
+        let inCall = localStorage.getItem('incomingCall');
+        let outCall = localStorage.getItem('outgoingCall');
+        let actCall = localStorage.getItem('activeCall');
+        if ((inCall) || (outCall) || (actCall)) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    function closePeerConnection () {
+        if (peerConnection !== undefined) {
+            peerConnection.close();
+            peerConnection = undefined;
+        }
+        if (localVideo) {
+            if ((localVideo.srcObject.getTracks()).length > 0) {
+                localVideo.srcObject.getTracks().forEach(track => track.stop());
+            }
+            localVideo.srcObject = null;
+        }
+    }
+
     $('#startAudioCall').click(function() {
-        initiateCall('audio', 'new');
+        // Check if any active calls
+        let callPossible = isCallPossible();
+        if (callPossible === true) {
+            initiateCall('audio', 'new');
+        } else {
+            $("#outCallBtnDiv").addClass('d-none');
+            $("#outCallMsg").text('Unable to connect. The line is busy.');
+            $("#outgoingCallModal").modal('show');
+            setInterval(function() {
+                // Close the modal after 4 seconds
+                $("#outgoingCallModal").modal('hide');
+                $("#outCallBtnDiv").removeClass('d-none');
+            }, 4000);
+        }
     });
 
     $('#startVideoCall').click(function() {
-        initiateCall('video', 'new');
+        // Check if any active calls
+        let callPossible = isCallPossible();
+        if (callPossible === true) {
+            initiateCall('video', 'new');
+        } else {
+            $("#outCallBtnDiv").addClass('d-none');
+            $("#outCallMsg").text('Unable to connect. The line is busy.');
+            $("#outgoingCallModal").modal('show');
+            setInterval(function() {
+                // Close the modal after 4 seconds
+                $("#outgoingCallModal").modal('hide');
+                $("#outCallBtnDiv").removeClass('d-none');
+            }, 4000);
+        }
     });
 
     function initiateCall(type, call_type, isMicEnabled=true) {
@@ -440,6 +490,12 @@ $(document).ready (() => {
                 // Establishing Peer Connection
                 if (call_type !== 'renegotiate') {
                     peerConnection = new RTCPeerConnection(RTCConfiguration);
+
+                    peerConnection.oniceconnectionstatechange = function (event) {
+                        if (event.target.iceConnectionState === 'closed' || event.target.iceConnectionState === 'failed') {
+                            closePeerConnection();
+                        }
+                    };
                 }
 
                 stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
@@ -498,14 +554,25 @@ $(document).ready (() => {
     }
 
     socket.on('incomingCall', function(data) {
-        // Store the incoming call details in local storage
-        let timestamp = new Date().getTime();
-        data['timestamp'] = timestamp;
-        localStorage.setItem('incomingCall', JSON.stringify(data));
+        let callPossible = isCallPossible();
+        if (callPossible === false) {
+            var chat_id = data['chat_id'];
+            socket.emit('phone-line-busy', {'chat_id': chat_id, 'user_email': currentUserEmail});
+            socket.emit('changeCallStatus', {'chat_id': chat_id, 'status': 'missed'});
+        } else {
+            // Store the incoming call details in local storage
+            let timestamp = new Date().getTime();
+            data['timestamp'] = timestamp;
+            localStorage.setItem('incomingCall', JSON.stringify(data));
 
-        // Display the incoming call
-        showIncomingCall(data['caller_name'], data['chat_id'], timestamp, data['type']);
+            // Display the incoming call
+            showIncomingCall(data['caller_name'], data['chat_id'], timestamp, data['type']);
+        }
     });
+
+    socket.on('phoneLineBusy', function() {
+        $("#outCallMsg").text('Unable to connect. The line is busy.');
+    })
 
     function showIncomingCall(caller_name, chat_id, timestamp, call_type) {
         $("#incomingCallChatId").val(chat_id);
@@ -720,6 +787,12 @@ $(document).ready (() => {
 
                 if (action !== 'renegotiate') {
                     peerConnection = new RTCPeerConnection(RTCConfiguration);
+
+                    peerConnection.oniceconnectionstatechange = function (event) {
+                        if (event.target.iceConnectionState === 'closed' || event.target.iceConnectionState === 'failed') {
+                            closePeerConnection();
+                        }
+                    };
                 }
 
                 stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
@@ -742,7 +815,7 @@ $(document).ready (() => {
                 await peerConnection.setRemoteDescription(remoteDescription);
 
                 if (action !== 'renegotiate') {
-                    peerConnection.onicecandidate = handleICECandidate;
+                    peerConnection.onicecandidate = handleCalleeICECandidate;
                 }
 
                 peerConnection.createAnswer()
@@ -769,8 +842,15 @@ $(document).ready (() => {
         }
     }
 
-    function handleICECandidate(event) {
+    function handleCalleeICECandidate(event) {
         var chat_id = $("#incomingCallChatId").val();
+        if (event.candidate) {
+            socket.emit('newIceCandidate', {'candidate': event.candidate, 'chat_id': chat_id, 'email': currentUserEmail});
+        }
+    }
+
+    function handleCallerICECandidate(event) {
+        var chat_id = $("#outgoingCallChatId").val();
         if (event.candidate) {
             socket.emit('newIceCandidate', {'candidate': event.candidate, 'chat_id': chat_id, 'email': currentUserEmail});
         }
@@ -791,7 +871,7 @@ $(document).ready (() => {
 
         if (action !== 'renegotiate') {
             // Listen for local ICE candidates on the local RTCPeerConnection
-            peerConnection.onicecandidate = handleICECandidate;
+            peerConnection.onicecandidate = handleCallerICECandidate;
 
             // Check Remote Call Type
             if (data['call_answer_type'] === 'audio') {
@@ -822,19 +902,6 @@ $(document).ready (() => {
             }, 3000);
         }
     });
-
-    function closePeerConnection () {
-        if (peerConnection !== undefined) {
-            peerConnection.close();
-            peerConnection = undefined;
-        }
-        if (localVideo) {
-            if ((localVideo.srcObject.getTracks()).length > 0) {
-                localVideo.srcObject.getTracks().forEach(track => track.stop());
-            }
-            localVideo.srcObject = null;
-        }
-    }
 
     // Toggle Mic
     $('#ToggleMic').click(function() {
